@@ -1,0 +1,23 @@
+{
+  "app": {
+    "title": "HomeNest Web Care App",
+    "textColor": "white",
+    "headerColor": "#ffffff",
+    "statusBar": "transparent",
+    "actionBarHidden": true,
+    "hideAndroidBottomNavigationBar": false,
+    "hideIOSSafeAreaBottom": true,
+    "selfControlLoading": false
+  },
+  "listCSS": [],
+  "listSyncJS": [],
+  "listAsyncJS": [],
+  "template": {
+    "name": "zaui-market",
+    "apiUrl": "",
+    "oaIDtoOpenChat": "4318657068771012646",
+    "logoUrl": "https://homenest.com.vn/wp-content/uploads/2024/12/logo-HN-final-07-1.png",
+    "shopName": "HomeNest Web Care",
+    "shopAddress": "Tòa nhà AVENUE Số 204, Mai Chí Thọ, Quận 2, Hồ Chí Minh"
+  }
+}

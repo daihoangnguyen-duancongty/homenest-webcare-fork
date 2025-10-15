@@ -1,0 +1,227 @@
+[
+  {
+    "id": 1,
+    "categoryId": 1,
+    "name": "Thiết kế website chuẩn UX/UI",
+    "price": 679000,
+    "originalPrice": 699000,
+    "image": "https://cdn.luatminhkhue.vn/lmk/articles/107/539596/dich-vu-phan-mem-la-gi-phan-mem-la-hang-hoa-hay-dich-vu-539596.jpg",
+    "detail": "Giao diện người dùng chuyên nghiệp, thân thiện và tối ưu trải nghiệm."
+  },
+  {
+    "id": 2,
+    "categoryId": 1,
+    "name": "Thiết kế logo và bộ nhận diện thương hiệu (Brand Identity)",
+    "price": 279000,
+    "originalPrice": 300000,
+    "image": "https://img.freepik.com/free-vector/wearable-technology-isometric-flowchart_1284-19018.jpg",
+    "detail": "Bao gồm logo, bảng màu, font chữ, biểu tượng, ấn phẩm quảng cáo."
+  },
+  {
+    "id": 3,
+    "categoryId": 8,
+    "name": "Thiết kế ứng dụng di động (App UI/UX Design)",
+    "price": 3130000,
+    "originalPrice": 5000000,
+    "image": "https://static.vecteezy.com/system/resources/previews/023/826/514/large_2x/ai-artificial-intelligence-humanoid-side-portrait-view-with-blue-and-orange-vibrant-neon-and-copy-space-artificial-intelligence-technology-concept-ai-generated-illustration-free-photo.jpg",
+    "detail": "Thiết kế giao diện cho app iOS, Android hoặc Zalo Mini App."
+  },
+  {
+    "id": 4,
+    "categoryId": 6,
+    "name": "Thiết kế banner, poster, infographic",
+    "price": 1500000,
+    "originalPrice": 3000000,
+    "image": "https://erp.today/wp-content/uploads/2022/12/Artificial_Intelligence.jpg",
+    "detail": "Dùng cho chiến dịch marketing, quảng cáo online/offline."
+  },
+  {
+    "id": 5,
+    "categoryId": 7,
+    "name": "Thiết kế email marketing template",
+    "price": 1500000,
+    "originalPrice": 3000000,
+    "image": "https://th.bing.com/th/id/R.bbe2c6303c0c15964b748864dde8676b?rik=Ne6NT1d2%2bCWyuQ&riu=http%3a%2f%2fwww.marktechpost.com%2fwp-content%2fuploads%2f2023%2f04%2fartificial-intelligence-new-technology-science-futuristic-abstract-human-brain-ai-technology-cpu-central-processor-unit-chipset-big-data-machine-learning-cyber-mind-domination-generative-ai-scaled.jpg&ehk=Pfn2UfJJa%2fXsb%2bmGYYKr4q7NUGxX0wQkQxvAvA5Kmps%3d&risl=&pid=ImgRaw&r=0https://tse1.mm.bing.net/th/id/OIP.Dk-1D_puL_9ThanDTXP-TgHaE8?w=1000&h=667&rs=1&pid=ImgDetMain&o=7&rm=3https://img.freepik.com/premium-photo/flat-illustration-artificial-intelligence_979520-2281.jpg",
+    "detail": "Tối ưu bố cục, hình ảnh để tăng tỉ lệ mở và click."
+  },
+  {
+    "id": 6,
+    "categoryId": 7,
+    "name": "Website doanh nghiệp, giới thiệu sản phẩm",
+    "price": 1500000,
+    "originalPrice": 3000000,
+    "image": "https://tse3.mm.bing.net/th/id/OIP.VekmBc_HqlY1gmzsaTqbggHaEo?rs=1&pid=ImgDetMain&o=7&rm=3https://img.freepik.com/premium-photo/worker-robots-working-office-staring_853932-486.jpg",
+    "detail": "Bột giặt Tide với công nghệ mạnh mẽ, loại bỏ vết bẩn ngay cả trong điều kiện khó khăn, mang lại sự tươi mới cho quần áo."
+  },
+  {
+    "id": 7,
+    "categoryId": 7,
+    "name": "Website thương mại điện tử (e-commerce)",
+    "price": 1500000,
+    "originalPrice": 3000000,
+    "image": "https://img.freepik.com/premium-photo/artificial-intelligence-modern-computing-image_947967-1039.jpg",
+    "detail": "Website chuẩn SEO, responsive, tối ưu tốc độ."
+  },
+  {
+    "id": 8,
+    "categoryId": 4,
+    "name": "Web app / SaaS",
+    "price": 4090000,
+    "originalPrice": 4200000,
+    "image": "https://assets-global.website-files.com/61dc0796f359b6eeecc06eab/64a28fae871e5dd143934abc_Best_AI_software.jpg",
+    "detail": "Có giỏ hàng, thanh toán, quản lý đơn hàng."
+  },
+  {
+    "id": 9,
+    "categoryId": 1,
+    "name": "Mini app trên các nền tảng (Zalo Mini App, Facebook App,...)",
+    "price": 2500000,
+    "originalPrice": 2700000,
+    "image": "https://miska.co.in/wp-content/uploads/2021/08/AI-Software.jpg",
+    "detail": "Ứng dụng web phục vụ khách hàng (CRM, ERP, quản lý,...)."
+  },
+  {
+    "id": 10,
+    "categoryId": 8,
+    "name": "Tối ưu tốc độ và bảo mật website",
+    "price": 3500000,
+    "originalPrice": 3700000,
+    "image": "https://res.infoq.com/articles/ai-for-software-developers/en/headerimage/generatedHeaderImage-1652883200735.jpg",
+    "detail": "Tích hợp các tính năng bán hàng, chăm sóc khách hàng."
+  },
+  {
+    "id": 11,
+    "categoryId": 4,
+    "name": "API và tích hợp hệ thống bên thứ ba",
+    "price": 450000,
+    "originalPrice": 500000,
+    "image": "https://techcrunch.com/wp-content/uploads/2015/02/shutterstock_175625024.jpg",
+    "detail": "Kết nối các dịch vụ, nền tảng như thanh toán, vận chuyển,..."
+  },
+  {
+    "id": 12,
+    "categoryId": 5,
+    "name": "Dịch vụ SEO & content marketing",
+    "price": 150000,
+    "originalPrice": 200000,
+    "image": "https://img.freepik.com/premium-photo/man-using-ai-software-generate-creative-images_932138-51728.jpg",
+    "detail": "Tối ưu website, tạo nội dung chuẩn SEO, blog, bài PR."
+  },
+  {
+    "id": 13,
+    "categoryId": 4,
+    "name": "Quảng cáo trực tuyến (Google Ads, Facebook Ads, Zalo Ads, TikTok Ads)",
+    "price": 500000,
+    "originalPrice": 600000,
+    "image": "https://www.news-forpeople.com/wp-content/uploads/2023/05/AI-Photo-Software.jpg",
+    "detail": "Tư vấn chiến lược và chạy quảng cáo."
+  },
+  {
+    "id": 14,
+    "categoryId": 7,
+    "name": "Email marketing và automation",
+    "price": 900000,
+    "originalPrice": 1000000,
+    "image": "https://au.efuturesworld.com/wp-content/uploads/2024/06/ai-software-outsourcing-solutions.jpg",
+    "detail": "Tự động gửi email theo kịch bản để chăm sóc khách hàng."
+  },
+  {
+    "id": 15,
+    "categoryId": 8,
+    "name": "Social Media Marketing (SMM)",
+    "price": 1200000,
+    "originalPrice": 1300000,
+    "image": "https://media.istockphoto.com/id/2092028381/photo/ai-image-creation-technology-man-use-ai-software-on-a-laptop-to-generate-images-showcasing-a.webp?a=1&b=1&s=612x612&w=0&k=20&c=1aoPeThJIYG5ueX3di0rbNq3Dh1l3vipraPtXGh2OtE=https://tse2.mm.bing.net/th/id/OIP.OVuMnJQvV-P9P-kYS-VsdQHaHa?rs=1&pid=ImgDetMain&o=7&rm=3https://tse2.mm.bing.net/th/id/OIP.OVuMnJQvV-P9P-kYS-VsdQHaHa?rs=1&pid=ImgDetMain&o=7&rm=3https://img.freepik.com/premium-photo/programming-flowchart-illustrating-software-ai-generate-illustration_547674-24894.jpg?w=2000https://tse4.mm.bing.net/th/id/OIP.ggK7ALEXD_t71_WrrO8rSgHaEK?rs=1&pid=ImgDetMain&o=7&rm=3https://fronty.com/static/uploads/1.10-31.10/FRONTY%20AI/design_to_code_converter.jpg",
+    "detail": "Quản lý fanpage, lên kế hoạch nội dung, tạo viral campaigns."
+  },
+  {
+    "id": 16,
+    "categoryId": 9,
+    "name": "Phân tích dữ liệu và báo cáo hiệu quả chiến dịch",
+    "price": 600000,
+    "originalPrice": 700000,
+    "image": "https://zalo-miniapp.github.io/zaui-market/dummy/product/tide.pnghttps://telmacgroup.com/wp-content/uploads/Implementing-AI-Software.jpg",
+    "detail": "Sử dụng công cụ analytics để đo lường ROI."
+  },
+  {
+    "id": 17,
+    "categoryId": 4,
+    "name": "Tư vấn chiến lược marketing tổng thể",
+    "price": 1500000,
+    "originalPrice": 1600000,
+    "image": "https://ideamaker.agency/wp-content/uploads/2021/05/Capture.png",
+    "detail": "Lên kế hoạch phát triển thương hiệu, kênh bán hàng đa dạng."
+  },
+  {
+    "id": 18,
+    "categoryId": 1,
+    "name": "Template website và app có thể tùy chỉnh",
+    "price": 200000,
+    "originalPrice": 250000,
+    "image": "https://miska.co.in/wp-content/uploads/2021/08/AI-Software.jpg",
+    "detail": "Giao diện có sẵn cho khách hàng dễ lựa chọn và tùy biến."
+  },
+  {
+    "id": 19,
+    "categoryId": 1,
+    "name": "Tool hỗ trợ thiết kế online",
+    "price": 1200000,
+    "originalPrice": 1300000,
+    "image": "https://tse3.mm.bing.net/th/id/OIP.O1ccJpAdiBwnXfgscYUnEQHaHa?rs=1&pid=ImgDetMain&o=7&rm=3https://www.news-forpeople.com/wp-content/uploads/2023/05/AI-Photo-Software.jpg",
+    "detail": "Cho phép khách hàng tạo hoặc chỉnh sửa nhanh logo, banner."
+  },
+  {
+    "id": 20,
+    "categoryId": 8,
+    "name": "Dashboard quản lý dự án & khách hàng",
+    "price": 1800000,
+    "originalPrice": 2000000,
+    "image": "https://img.freepik.com/premium-photo/facial-recognition-system-concept-3d-scanning-face-id-vector-wireframe-concept-biometric-scan_524325-6265.jpg",
+    "detail": "Giúp quản lý công việc nội bộ và khách hàng hiệu quả."
+  },
+  {
+    "id": 21,
+    "categoryId": 6,
+    "name": "Ứng dụng chatbot tự động chăm sóc khách hàng",
+    "price": 700000,
+    "originalPrice": 800000,
+    "image": "https://tse4.mm.bing.net/th/id/OIP.Qk7L4swWuXUDmqyeANGbYwHaEO?w=1092&h=624&rs=1&pid=ImgDetMain&o=7&rm=3https://klarland.com/wp-content/uploads/2023/12/Technische-Huerden-und-Loesungen-1024x585.png",
+    "detail": "Tích hợp trên website hoặc các nền tảng mạng xã hội."
+  },
+  {
+    "id": 22,
+    "categoryId": 4,
+    "name": "Dịch vụ tối ưu chuyển đổi (Conversion Rate Optimization - CRO)",
+    "price": 500000,
+    "originalPrice": 600000,
+    "image": "https://media.licdn.com/dms/image/v2/D5612AQErDLmISQQKAQ/article-cover_image-shrink_720_1280/article-cover_image-shrink_720_1280/0/1735545206783?e=2147483647&v=beta&t=xkv0nEUiDzztGYxlkC3C3fqDeVLlEK5RxewBxYgknGQhttps://theworldthinks.com/wp-content/uploads/2023/12/Continuous-Learning-The-Key-to-Thriving-in-a-Rapidly-Evolving-Digital-Age.png",
+    "detail": "Tích hợp trên website hoặc các nền tảng mạng xã hội."
+  },
+  {
+    "id": 23,
+    "categoryId": 7,
+    "name": "Dịch vụ quản lý và phát triển nội dung đa kênh (Omnichannel Content Management)",
+    "price": 900000,
+    "originalPrice": 1000000,
+    "image": "https://media.licdn.com/dms/image/v2/D5612AQHsWQwYe0PDZg/article-cover_image-shrink_720_1280/article-cover_image-shrink_720_1280/0/1731651663529?e=2147483647&v=beta&t=xBiGP5yhFhe8dgGXFZOL4XMQrMMFsLcENdba0bR12uchttps://th.bing.com/th/id/R.3329a49b9e6240979a1b1fb6f6daa214?rik=KLLKz66hVXBV5Q&riu=http%3a%2f%2faiaccount.com%2fwp-content%2fuploads%2f2024%2f02%2fkey-features-of-ai-account-software.jpg&ehk=RNxLUDEquCa6UmvWR11c1VvTGHOj7SyQCCfSPQifCrg%3d&risl=&pid=ImgRaw&r=0https://tse1.mm.bing.net/th/id/OIP.WWUQ4ISFBf5-8tQ-dt9feQHaEK?rs=1&pid=ImgDetMain&o=7&rm=3https://img.freepik.com/premium-photo/3d-illustration-use-ai-companies-stock-illustration_839035-1445573.jpg",
+    "detail": "Giúp quản lý công việc nội bộ và khách hàng hiệu quả."
+  },
+  {
+    "id": 24,
+    "categoryId": 7,
+    "name": "Phát triển Progressive Web App (PWA)",
+    "price": 800000,
+    "originalPrice": 900000,
+    "image": "https://brokenctrl.com/wp-content/uploads/Ai-in-Marketing-and-Automation.webp",
+    "detail": "Giúp quản lý công việc nội bộ và khách hàng hiệu quả.."
+  },
+  {
+    "id": 25,
+    "categoryId": 9,
+    "name": "Dịch vụ tư vấn và triển khai chatbot AI & trợ lý ảo",
+    "price": 1500000,
+    "originalPrice": 1600000,
+    "image": "https://img.freepik.com/premium-photo/customer-service-interactive-hub-where-digital-technology-meets-excellence-service_980716-115902.jpg",
+    "detail": "Tích hợp trên website hoặc các nền tảng mạng xã hội."
+  }
+]

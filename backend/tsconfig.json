@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",                    // Hỗ trợ async/await hiện đại
+    "module": "commonjs",                  // Node.js runtime
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "strict": true,                         // Bật strict mode cho TS tốt hơn
+    "noImplicitAny": true,                  // Bắt buộc khai báo type
+    "esModuleInterop": true,                // import axios, mongoose, ...
+    "skipLibCheck": true,                   // Bỏ kiểm tra .d.ts của thư viện
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,              // Hỗ trợ import file JSON (ví dụ config)
+    "types": ["node", "express"]            // Tải type cho Node và Express
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

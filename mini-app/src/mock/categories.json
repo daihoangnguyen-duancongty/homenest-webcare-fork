@@ -1,0 +1,66 @@
+[
+  {
+    "id": 1,
+    "name": "Hosting & Tên miền",
+    "detail": "Cung cấp dịch vụ lưu trữ website chuyên nghiệp và đăng ký tên miền chuẩn SEO, giúp doanh nghiệp hoạt động ổn định trên Internet.",
+    "image": "https://images.pexels.com/photos/6985001/pexels-photo-6985001.jpeg?cs=srgb&dl=pexels-gradienta-6985001.jpg&fm=jpg",
+    "imgList": "https://static.vecteezy.com/system/resources/previews/023/826/514/large_2x/ai-artificial-intelligence-humanoid-side-portrait-view-with-blue-and-orange-vibrant-neon-and-copy-space-artificial-intelligence-technology-concept-ai-generated-illustration-free-photo.jpg",
+    "icon": "https://static.vecteezy.com/system/resources/previews/025/003/252/large_2x/cute-cartoon-girl-student-character-on-transparent-background-generative-ai-png.png"
+  },
+  {
+    "id": 2,
+    "name": "Branding",
+    "detail": "Xây dựng thương hiệu chuyên nghiệp từ logo, bộ nhận diện đến định hình hình ảnh thương hiệu trong tâm trí khách hàng.",
+    "image": "https://webgradients.com/public/webgradients_png/062%20Wide%20Matrix.png",
+    "imgList": "https://erp.today/wp-content/uploads/2022/12/Artificial_Intelligence.jpg",
+    "icon": "https://static.vecteezy.com/system/resources/previews/025/003/256/non_2x/cute-cartoon-girl-student-character-on-transparent-background-generative-ai-png.png"
+  },
+  {
+    "id": 3,
+    "name": "Marketing tổng thể",
+    "detail": "Triển khai chiến lược marketing toàn diện bao gồm digital, social media, content và quảng cáo để tăng trưởng doanh số và thương hiệu.",
+    "image": "https://images.alphacoders.com/102/thumb-1920-1026345.jpg",
+    "imgList": "https://tse3.mm.bing.net/th/id/OIP.VekmBc_HqlY1gmzsaTqbggHaEo?rs=1&pid=ImgDetMain&o=7&rm=3https://img.freepik.com/premium-photo/worker-robots-working-office-staring_853932-486.jpg",
+    "icon": "https://static.vecteezy.com/system/resources/previews/025/003/259/non_2x/cute-cartoon-girl-student-character-on-transparent-background-generative-ai-png.png"
+  },
+  {
+    "id": 4,
+    "name": "Thiết kế website",
+    "detail": "Thiết kế website UI/UX hiện đại, tối ưu tốc độ và chuẩn SEO, giúp doanh nghiệp thể hiện hình ảnh chuyên nghiệp trên nền tảng số.",
+    "image": "https://wallpaperaccess.com/full/340434.png",
+    "imgList": "https://assets-global.website-files.com/61dc0796f359b6eeecc06eab/64a28fae871e5dd143934abc_Best_AI_software.jpg",
+    "icon": "https://static.vecteezy.com/system/resources/previews/025/003/253/non_2x/cute-cartoon-girl-student-character-on-transparent-background-generative-ai-png.png"
+  },
+  {
+    "id": 5,
+    "name": "Hosting & Tên miền",
+    "detail": "Dịch vụ cung cấp không gian lưu trữ ổn định, băng thông cao cùng với hỗ trợ đăng ký tên miền nhanh chóng, dễ dàng quản lý.",
+    "image": "https://wallpaperaccess.com/full/340434.png",
+    "imgList": "https://miska.co.in/wp-content/uploads/2021/08/AI-Software.jpg",
+    "icon": "https://static.vecteezy.com/system/resources/previews/035/593/768/non_2x/ai-generated-cute-girl-holding-book-ai-generative-free-png.png"
+  },
+  {
+    "id": 6,
+    "name": "Branding",
+    "detail": "Dịch vụ định vị thương hiệu và xây dựng hình ảnh độc đáo, tạo dấu ấn mạnh mẽ trong tâm trí khách hàng mục tiêu.",
+    "image": "https://images.alphacoders.com/102/thumb-1920-1026345.jpg",
+    "imgList": "https://res.infoq.com/articles/ai-for-software-developers/en/headerimage/generatedHeaderImage-1652883200735.jpg",
+    "icon": "https://static.vecteezy.com/system/resources/previews/025/003/253/non_2x/cute-cartoon-girl-student-character-on-transparent-background-generative-ai-png.png"
+  },
+  {
+    "id": 7,
+    "name": "Marketing tổng thể",
+    "detail": "Giải pháp marketing 360 độ: từ phân tích thị trường, xây dựng chiến dịch đến triển khai các kênh truyền thông hiệu quả.",
+    "image": "https://images.pexels.com/photos/6985001/pexels-photo-6985001.jpeg?cs=srgb&dl=pexels-gradienta-6985001.jpg&fm=jpg",
+    "imgList": "https://img.freepik.com/premium-photo/man-using-ai-software-generate-creative-images_932138-51728.jpg",
+    "icon": "https://static.vecteezy.com/system/resources/previews/025/003/259/non_2x/cute-cartoon-girl-student-character-on-transparent-background-generative-ai-png.png"
+  },
+  {
+    "id": 8,
+    "name": "Thiết kế website",
+    "detail": "Thiết kế giao diện và phát triển website theo yêu cầu, tương thích thiết bị di động, dễ dàng quản trị và tích hợp chức năng nâng cao.",
+    "image": "https://wallpaperaccess.com/full/340434.png",
+    "imgList": "https://tse4.mm.bing.net/th/id/OIP.Qk7L4swWuXUDmqyeANGbYwHaEO?w=1092&h=624&rs=1&pid=ImgDetMain&o=7&rm=3https://klarland.com/wp-content/uploads/2023/12/Technische-Huerden-und-Loesungen-1024x585.png",
+    "icon": "https://static.vecteezy.com/system/resources/previews/025/003/253/non_2x/cute-cartoon-girl-student-character-on-transparent-background-generative-ai-png.png"
+  }
+]
