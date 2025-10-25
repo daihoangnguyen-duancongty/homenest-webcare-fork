@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { getCurrentUser } from '../utils/auth';
 
 interface ProtectRouteProps {
-  children: JSX.Element;
+  children: React.ReactNode;
   allowedRoles?: string[];
 }
 
