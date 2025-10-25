@@ -14,6 +14,7 @@ export interface IZaloMessage extends Document {
   sentAt?: Date;
   createdAt?: Date;
   updatedAt?: Date;
+  read?: boolean;
 }
 
 const ZaloMessageSchema = new Schema<IZaloMessage>(
@@ -27,6 +28,7 @@ const ZaloMessageSchema = new Schema<IZaloMessage>(
     avatar: { type: String },
     assignedTelesale: { type: String, default: null },
     senderType: { type: String, enum: ['admin', 'telesale', 'customer'], default: 'customer' },
+    read: { type: Boolean, default: false },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );

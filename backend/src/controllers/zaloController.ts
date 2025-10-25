@@ -12,9 +12,6 @@ interface UserProfile {
   avatar: string | null;
 }
 
-
-
-
 // Kiểm tra Access token đã có
 (async () => {
   try {
@@ -100,6 +97,7 @@ export const sendMessageController: RequestHandler = async (req, res) => {
       success: result?.error === 0,
       response: result,
       sentAt: new Date(),
+      read: true,
     });
 
     // ✅ Emit realtime cho frontend
@@ -152,8 +150,12 @@ export const zaloWebhookController: RequestHandler = async (req, res) => {
     }
 
     // Nếu payload có mảng data (Postman), lưu từng tin nhắn
-    const messages: Array<{ message?: string; time?: number; from_display_name?: string; from_avatar?: string }> =
-      payload?.data ?? [{ message: payload?.message?.text ?? '[no text]', time: Date.now() }];
+    const messages: Array<{
+      message?: string;
+      time?: number;
+      from_display_name?: string;
+      from_avatar?: string;
+    }> = payload?.data ?? [{ message: payload?.message?.text ?? '[no text]', time: Date.now() }];
 
     for (const msg of messages) {
       const text = msg.message ?? '[no text]';
@@ -169,6 +171,7 @@ export const zaloWebhookController: RequestHandler = async (req, res) => {
         success: true,
         response: msg,
         sentAt,
+        read: false,
       });
 
       // Emit realtime cho admin

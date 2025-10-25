@@ -2,7 +2,7 @@ import type { Message, User } from '../types';
 import { getToken } from '../utils/auth';
 import { BACKEND_URL } from './fetcher';
 
-const BASE_URL = import.meta.env.VITE_BACKEND_URL || `${BACKEND_URL}/api/zalo`;
+export const BASE_URL = import.meta.env.VITE_BACKEND_URL || `${BACKEND_URL}/api/zalo`;
 
 // 📨 Lấy toàn bộ tin nhắn của 1 user
 export const fetchMessages = async (

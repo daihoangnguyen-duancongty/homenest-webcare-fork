@@ -130,17 +130,21 @@ router.get(
           const guest = await GuestUser.findById(conv.userId).lean();
           const latestMessage =
             conv.messages.length > 0 ? conv.messages[conv.messages.length - 1] : null;
-
+          // ✅ Đếm tin nhắn chưa đọc
+          const unreadCount = await ZaloMessageModel.countDocuments({
+            userId: conv.userId,
+            senderType: 'customer',
+            read: false,
+          });
           return {
             userId: conv.userId,
             username: guest?.username || 'Khách hàng',
-            avatar:
-              guest?.avatar ||
-              'https://ui-avatars.com/api/?name=Guest&background=random',
+            avatar: guest?.avatar || 'https://ui-avatars.com/api/?name=Guest&background=random',
             isOnline: guest?.isOnline ?? false,
             assignedTelesale: guest?.assignedTelesale || null,
             lastMessage: latestMessage?.text || '',
             lastSentAt: latestMessage?.sentAt || latestMessage?.createdAt,
+            unreadCount,
             messages: conv.messages,
           };
         })
@@ -148,13 +152,30 @@ router.get(
 
       // Sắp xếp theo thời gian gần nhất
       enrichedConversations.sort(
-        (a, b) =>
-          new Date(b.lastSentAt ?? 0).getTime() - new Date(a.lastSentAt ?? 0).getTime()
+        (a, b) => new Date(b.lastSentAt ?? 0).getTime() - new Date(a.lastSentAt ?? 0).getTime()
       );
 
       res.json(enrichedConversations);
     } catch (err: any) {
       console.error('❌ /conversations error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+// Đánh dấu tin nhắn đã đọc
+router.patch(
+  '/messages/:userId/read',
+  authenticateToken,
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const { userId } = req.params;
+      const result = await ZaloMessageModel.updateMany(
+        { userId, senderType: 'customer', read: false },
+        { $set: { read: true } }
+      );
+      res.json({ success: true, modified: result.modifiedCount });
+    } catch (err: any) {
+      console.error('❌ /messages/:userId/read error:', err);
       res.status(500).json({ error: err.message });
     }
   }
@@ -188,7 +209,6 @@ router.post(
     }
   }
 );
-
 
 // Assign telesale (admin only)
 router.post(
@@ -234,7 +254,6 @@ router.post(
   }
 );
 
-
 // Messages user
 router.get('/messages/:userId', async (req, res) => {
   const { userId } = req.params;
@@ -272,10 +291,14 @@ router.get('/telesales', async (req, res) => {
   }
 });
 // Gọi điện thoại zalo
-router.post("/call/create", async (req, res, next) => {
-  console.log("🚀 Đã nhận POST /api/zalo/call/create với body:", req.body);
-  next();
-}, createCallController);
+router.post(
+  '/call/create',
+  async (req, res, next) => {
+    console.log('🚀 Đã nhận POST /api/zalo/call/create với body:', req.body);
+    next();
+  },
+  createCallController
+);
 
 //kiểm tra Access Token & Refresh Token hiện tại mà backend lưu trong MongoDB
 router.get('/token/latest', async (_req, res) => {
