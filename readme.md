@@ -49,6 +49,11 @@ TEST
 
 Admin:
 
+User:tiennguyen@example.com
+Pass: tien1234
+
+Admin:
+
 User:verdhnadmin3@example.com
 Pass: admin126
 
@@ -70,6 +75,18 @@ Pass: telesale128
 
 userid:68edc6388d8a13bb957d8cff
 "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWRjNjM4OGQ4YTEzYmI5NTdkOGNmZiIsInJvbGUiOiJ0ZWxlc2FsZSIsImlhdCI6MTc2MDQxMzMxNCwiZXhwIjoxNzYxMDE4MTE0fQ.Q9lya3mj_6GFHY_TBLHi6Y7aTEuyCmSa7rwVluofk0s",
+
+Telesale 9:
+User:verdhntelesales9@example.com
+Pass: telesale9
+
+Telesale 10:
+User:verdhntelesales10@example.com
+Pass: telesale10
+
+Telesale 11:
+User:verdhntelesales11@example.com
+Pass: telesale11
 
 ------Socket io:
 

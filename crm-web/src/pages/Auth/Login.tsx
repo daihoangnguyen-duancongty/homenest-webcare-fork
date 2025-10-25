@@ -1,7 +1,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginUser } from './../../api/authApi';
-import { Box, Button, TextField, Typography, InputAdornment, Paper, Alert } from '@mui/material';
+import {
+  Box,
+  Button,
+  TextField,
+  Typography,
+  InputAdornment,
+  Paper,
+  Alert,
+} from '@mui/material';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 
@@ -36,101 +44,123 @@ export default function Login() {
         minHeight: '100vh',
         width: '100vw',
         display: 'flex',
-        justifyContent: 'center',
+        justifyContent: 'flex-end',
         alignItems: 'center',
-        background: 'linear-gradient(135deg, #4f46e5, #9333ea, #ec4899)',
+       
+        backgroundImage: `
+          linear-gradient(135deg, rgba(79,70,229,0.9), rgba(147,51,234,0.9), rgba(236,72,153,0.9)),
+          url('https://homenest.com.vn/wp-content/uploads/2024/12/logo-HN-final-07-1.png')
+        `,
+        backgroundSize: 'cover',
+           backgroundPosition: 'calc(100% - 0vw) center',
+        backgroundRepeat: 'no-repeat',
+        overflow: 'hidden',
       }}
     >
       <Paper
         elevation={12}
         sx={{
-          p: 6,
+          height: '100vh',
+          width: '100%',
           maxWidth: 400,
-          width: '90%',
-          borderRadius: 4,
-          backdropFilter: 'blur(10px)',
+          borderRadius: 0,
           bgcolor: 'rgba(255,255,255,0.9)',
+          backdropFilter: 'blur(10px)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          px: 6,
+          boxShadow: '-4px 0 20px rgba(0,0,0,0.15)',
         }}
       >
-        <Typography variant="h4" fontWeight="bold" textAlign="center" mb={4}>
-          Đăng nhập
-        </Typography>
-
-        <form onSubmit={handleLogin}>
-          <TextField
-            fullWidth
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            margin="normal"
-            variant="outlined"
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <MailOutlineIcon color="action" />
-                </InputAdornment>
-              ),
-            }}
-          />
-
-          <TextField
-            fullWidth
-            label="Mật khẩu"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            margin="normal"
-            variant="outlined"
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <LockOutlinedIcon color="action" />
-                </InputAdornment>
-              ),
-            }}
-          />
-
-          {error && (
-            <Alert severity="error" sx={{ mt: 2, mb: 1 }}>
-              {error}
-            </Alert>
-          )}
-
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{
-              mt: 3,
-              py: 1.5,
-              fontWeight: 'bold',
-              background: 'linear-gradient(90deg, #4f46e5, #9333ea)',
-              '&:hover': {
-                background: 'linear-gradient(90deg, #4338ca, #7e22ce)',
-              },
-            }}
-          >
+        <Box sx={{ width: '100%' }}>
+          <Typography variant="h4" fontWeight="bold" textAlign="center" mb={4}>
             Đăng nhập
-          </Button>
+          </Typography>
 
-          <Typography variant="body2" textAlign="center" mt={2} color="textSecondary">
-            Chưa có tài khoản?{' '}
-            <Box
-              component="span"
+          <form onSubmit={handleLogin}>
+            <TextField
+              fullWidth
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              margin="normal"
+              variant="outlined"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <MailOutlineIcon color="action" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <TextField
+              fullWidth
+              label="Mật khẩu"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              margin="normal"
+              variant="outlined"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LockOutlinedIcon color="action" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            {error && (
+              <Alert severity="error" sx={{ mt: 2, mb: 1 }}>
+                {error}
+              </Alert>
+            )}
+
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
               sx={{
-                color: 'primary.main',
+                mt: 3,
+                py: 1.5,
                 fontWeight: 'bold',
-                cursor: 'pointer',
-                '&:hover': { textDecoration: 'underline' },
+                background: 'linear-gradient(90deg, #4f46e5, #9333ea)',
+                '&:hover': {
+                  background: 'linear-gradient(90deg, #4338ca, #7e22ce)',
+                },
               }}
             >
-              Đăng ký
-            </Box>
-          </Typography>
-        </form>
+              Đăng nhập
+            </Button>
+
+            <Typography
+              variant="body2"
+              textAlign="center"
+              mt={3}
+              color="textSecondary"
+            >
+              Chưa có tài khoản?{' '}
+              <Box
+                component="span"
+                onClick={() => navigate('/signup')}
+                sx={{
+                  color: 'primary.main',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  '&:hover': { textDecoration: 'underline' },
+                }}
+              >
+                Đăng ký
+              </Box>
+            </Typography>
+          </form>
+        </Box>
       </Paper>
     </Box>
   );

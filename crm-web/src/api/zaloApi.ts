@@ -66,15 +66,16 @@ export const fetchTelesales = async (): Promise<User[]> => {
 };
 
 // 🔄 Phân công telesale cho cuộc hội thoại
-export const assignTelesale = async (messageId: string, telesaleId: string) => {
+
+export const assignTelesale = async (userId: string, telesaleId: string) => {
   const token = getToken();
-  const res = await fetch(`${BASE_URL}/assign-telesale`, {
+  const res = await fetch(`${BASE_URL}/assign-conversation`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ messageId, telesaleId }),
+    body: JSON.stringify({ userId, telesaleId }),
   });
 
   if (!res.ok) {

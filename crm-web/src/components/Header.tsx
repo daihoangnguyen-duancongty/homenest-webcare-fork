@@ -7,19 +7,24 @@ import {
   IconButton,
   Menu,
   MenuItem,
-  Box,
+  Box,useTheme,
+  useMediaQuery
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import type { AppBarProps } from '@mui/material';
 
-interface HeaderProps {
-  isExpanded: boolean;
+interface HeaderProps extends AppBarProps { 
+
   activeSection: string;
+  isMobile?: boolean;
+  isExpanded?: boolean;
 }
 
-export default function Header({ isExpanded, activeSection }: HeaderProps) {
+export default function Header({ activeSection, isMobile,isExpanded, ...props }: HeaderProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const navigate = useNavigate();
-
+  const theme = useTheme();
+  const isTabletOrMobile = useMediaQuery(theme.breakpoints.down('md'));
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
 
@@ -39,8 +44,8 @@ export default function Header({ isExpanded, activeSection }: HeaderProps) {
     case 'chat':
       label = 'Quản lý cuộc trò chuyện';
       break;
-    case 'customers':
-      label = 'Quản lý Khách hàng';
+    case 'employee':
+      label = 'Quản lý nhân viên';
       break;
     case 'automation':
       label = 'Tự động hóa';
@@ -49,6 +54,7 @@ export default function Header({ isExpanded, activeSection }: HeaderProps) {
       label = 'Báo cáo';
       break;
   }
+  const left = isTabletOrMobile ? 0 : (isExpanded ? 280 : 60);
 
   return (
     <AppBar
@@ -56,7 +62,7 @@ export default function Header({ isExpanded, activeSection }: HeaderProps) {
       elevation={0}
       sx={{
         top: 0,
-        left: isExpanded ? 280 : 60,
+       left: left,
         right: 0,
         height: '6.5vh',
         background: 'linear-gradient(90deg, #ffffff 0%, #f8fafc 100%)',
@@ -65,8 +71,10 @@ export default function Header({ isExpanded, activeSection }: HeaderProps) {
         transition: 'left 0.3s ease',
         display: 'flex',
         justifyContent: 'center',
-        zIndex: 900,
+        zIndex: 1100,
+         ...props.sx, 
       }}
+       {...props} 
     >
       <Toolbar sx={{ height: '100%', justifyContent: 'space-between', px: 4 }}>
         <Typography
@@ -93,16 +101,20 @@ export default function Header({ isExpanded, activeSection }: HeaderProps) {
             transform: 'translateY(-50%)',
           }}
         >
-          <IconButton onClick={handleMenuOpen}>
+          <Box onClick={handleMenuOpen} sx={{ display:"flex", flexDirection:"row", gap:"1rem" }}>
             <Avatar
               alt={username}
               src="https://api.dicebear.com/7.x/avataaars/svg?seed=tech"
               sx={{ width: 30, height: 30 }}
             />
-          </IconButton>
-          <Typography variant="body1" fontWeight={500}>
-            Xin chào, <strong>{username}</strong>
-          </Typography>
+          
+            {/* Chỉ show greeting khi desktop */}
+          {!isTabletOrMobile && (
+            <Typography variant="body1" fontWeight={500}>
+              Xin chào, <strong>{username}</strong>
+            </Typography>
+          )}
+          </Box>
           <Menu anchorEl={anchorEl} open={!!anchorEl} onClose={handleMenuClose}>
             <MenuItem onClick={handleMenuClose}>Profile</MenuItem>
             <MenuItem onClick={handleMenuClose}>Cài đặt</MenuItem>

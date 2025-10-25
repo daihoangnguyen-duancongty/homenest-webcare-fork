@@ -1,6 +1,4 @@
-// authMiddleware.ts
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 
@@ -15,29 +13,8 @@ export interface AuthRequest extends Request {
   };
 }
 
-// Middleware xác thực JWT
-export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
 
-  if (!token) {
-    return res.status(401).json({ message: 'Không có token, truy cập bị từ chối.' });
-  }
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as {
-      id: string;
-      role: 'admin' | 'telesale';
-      [key: string]: any;
-    };
-    req.user = decoded;
-    next();
-  } catch (err) {
-    return res.status(403).json({ message: 'Token không hợp lệ.' });
-  }
-};
-
-// Chỉ admin mới được truy cập
+// 🔒 Chỉ cho phép Admin
 export const authorizeAdmin = (req: AuthRequest, res: Response, next: NextFunction): void => {
   if (req.user?.role !== 'admin') {
     res.status(403).json({ message: 'Quyền truy cập bị từ chối. Cần quyền admin.' });

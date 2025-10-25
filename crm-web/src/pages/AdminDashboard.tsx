@@ -1,64 +1,58 @@
 import { useState } from 'react';
-import { Box } from '@mui/material';
-import Sidebar from '../components/Sidebar';
+import { Box, useTheme, useMediaQuery } from '@mui/material';
+import Sidebar from './../components/sidebar/Sidebar';
 import Header from '../components/Header';
 import ChatPanel from '../components/ChatPanel';
+import EmployeePanel from '../components/EmployeePanel';
+import type { ModuleKey } from './../components/sidebar/Sidebar';
 
 export default function AdminDashboard() {
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
-  const [activeModule, setActiveModule] = useState<'chat' | 'customers' | 'automation' | 'reports'>(
-    'chat'
-  );
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [activeUserId, setActiveUserId] = useState<string | null>(null);
+  const [activeModule, setActiveModule] = useState<ModuleKey>('chat');
+  const [globalLoading, setGlobalLoading] = useState(false);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   return (
-    <Box
-      sx={{
-        height: '100vh',
-      
-        display: 'flex',
-        bgcolor: 'linear-gradient(180deg, #2979ca 0%, #edf2f7 100%)',
-      }}
-    >
+    <Box sx={{ display: 'flex', position: 'relative', height: '100vh', width: '100vw' }}>
+      <Header isExpanded={isSidebarExpanded} activeSection={activeModule} isMobile={mobileOpen} />
       <Sidebar
-        onSelectUser={setSelectedUser}
+        role="admin"
+        isExpanded={isSidebarExpanded}
+        setIsExpanded={setIsSidebarExpanded}
         setActiveModule={setActiveModule}
-        isExpanded={isExpanded}
-        setIsExpanded={setIsExpanded}
+        mobileOpen={mobileOpen}
+        setMobileOpen={setMobileOpen}
+        onSelectUser={(userId) => {
+          setGlobalLoading(true);
+          setActiveUserId(userId);
+        }}
       />
-      <Header isExpanded={isExpanded} activeSection={activeModule} />
-
+      {/* ================= Content chính ================= */}
       <Box
-        flex={1}
         sx={{
-       
-          marginLeft: isExpanded ? '280px' : '60px',
-          marginTop: '10vh',
-          p: 3,
-          transition: 'margin-left 0.3s ease',
-          overflow: 'auto',
+          flex: 1,
+          p: 2,
+          ml: !isMobile ? (isSidebarExpanded ? '280px' : '60px') : 0,
+          transition: 'margin-left 0.4s',
         }}
       >
-        {activeModule === 'chat' ? (
-          selectedUser ? (
-            <ChatPanel userId={selectedUser} />
-          ) : (
-            <Box
-              flex={1}
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              color="text.secondary"
-            >
-              💬 Chọn khách hàng để bắt đầu trò chuyện
-            </Box>
-          )
-        ) : (
-          <Box flex={1} display="flex" alignItems="center" justifyContent="center">
-            🚧 Module "{activeModule}" đang được phát triển
-          </Box>
+        {activeModule === 'chat' && activeUserId && (
+          <ChatPanel userId={activeUserId} role="admin" onLoaded={() => setGlobalLoading(false)} />
         )}
+
+        {activeModule === 'employee' && <EmployeePanel />}
       </Box>
+      {/* ================= Loading overlay ================= */}
+      {/* {globalLoading && (
+        <Box sx={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', bgcolor: 'rgba(255,255,255,0.7)', zIndex: 2000, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+          <CircularProgress />
+          <Typography mt={2}>Đang tải dữ liệu...</Typography>
+        </Box>
+      )} */}
     </Box>
   );
 }

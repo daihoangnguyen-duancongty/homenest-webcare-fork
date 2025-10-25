@@ -1,56 +1,124 @@
 import axios from 'axios';
 import { BACKEND_URL } from './fetcher';
 
-const API_URL = import.meta.env.VITE_API_URL || `${BACKEND_URL}/api/users`;
+// Base URL cho auth
+const API_URL = `${BACKEND_URL}/api/users`;
 
 // ========================
-// Định nghĩa kiểu dữ liệu
+// 🔷 Kiểu dữ liệu
 // ========================
-
-export interface RegisterUserData {
-  name: string;
-  email: string;
-  password: string;
-  // thêm các trường khác nếu cần
-}
 
 export interface RegisterUserResponse {
-  id: string;
-  name: string;
-  email: string;
-  // các trường API trả về nếu có
+  message: string;
+  user: {
+    id: string;
+    username: string;
+    role: 'admin' | 'telesale';
+  };
 }
 
 export interface LoginResponse {
   token: string;
   user: {
     id: string;
-    name: string;
+    username: string;
     email: string;
+    phone: string;
+    address: string;
+    role: 'admin' | 'telesale';
+    avatar?: {
+      path?: string;
+      filename?: string;
+      originalname?: string;
+    };
   };
 }
 
 export interface Telesales {
+  _id: string;
   id: string;
-  name: string;
-  // các trường khác nếu có
+  username?: string;
+  name?: string;
+  avatar?: string;
+}
+export interface Employee {
+  _id: string;
+  username: string;
+  email: string;
+  phone: string;
+  address: string;
+  role: 'admin' | 'telesale';
+  avatar?: string;
 }
 
 // ========================
-// Hàm API
+// 🔶 Hàm API
 // ========================
 
-export async function registerUser(data: RegisterUserData): Promise<RegisterUserResponse> {
-  const res = await axios.post<RegisterUserResponse>(`${API_URL}/register`, data);
+// ✅ Đăng ký (FormData, có avatar)
+export const registerUser = async (formData: FormData): Promise<RegisterUserResponse> => {
+  const res = await axios.post<RegisterUserResponse>(`${API_URL}/register`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return res.data;
-}
+};
 
-export async function loginUser(email: string, password: string): Promise<LoginResponse> {
+// ✅ Đăng nhập
+export const loginUser = async (email: string, password: string): Promise<LoginResponse> => {
   const res = await axios.post<LoginResponse>(`${API_URL}/login`, { email, password });
   return res.data;
-}
+};
 
-export async function getTelesales(): Promise<Telesales[]> {
+// ✅ Lấy danh sách telesales
+export const getTelesales = async (): Promise<Telesales[]> => {
   const res = await axios.get<Telesales[]>(`${BACKEND_URL}/api/zalo/telesales`);
   return res.data;
-}
+};
+// ========================
+// 🔶 Employee API (CRUD)
+// ========================
+
+
+
+
+/** ✅ Lấy danh sách nhân viên (yêu cầu token) */
+export const getEmployees = async (token: string) => {
+  const res = await axios.get(`${API_URL}/employees`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res.data;
+};
+
+/** ✅ Tạo nhân viên mới */
+export const createEmployee = async (formData: FormData, token: string) => {
+  const res = await axios.post(`${API_URL}/employees`, formData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return res.data;
+};
+
+/** ✅ Cập nhật nhân viên */
+export const updateEmployee = async (id: string, formData: FormData, token: string) => {
+  const res = await axios.put(`${API_URL}/employees/${id}`, formData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return res.data;
+};
+
+/** ✅ Xóa nhân viên */
+export const deleteEmployee = async (id: string, token: string) => {
+  const res = await axios.delete(`${API_URL}/employees/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return res.data;
+};

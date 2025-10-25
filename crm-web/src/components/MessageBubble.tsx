@@ -16,7 +16,7 @@ export default function MessageBubble({
   avatar,
   fromAdmin = false,
   isOnline = false,
-  align = fromAdmin ? 'left' : 'right',
+  align = fromAdmin ? 'right' : 'left',
   bubbleColor = fromAdmin ? '#007bff' : '#ffffff',
 }: MessageBubbleProps) {
   return (
