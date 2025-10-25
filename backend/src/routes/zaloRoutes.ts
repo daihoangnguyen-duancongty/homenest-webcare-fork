@@ -13,6 +13,10 @@ import { createCallController } from '../controllers/zaloCallController';
 
 const router = Router();
 
+interface PatchOnlineBody {
+  isOnline: boolean;
+}
+
 // Middleware parse text/plain
 router.use('/webhook', (req: Request, _res: Response, next: NextFunction) => {
   if (req.is('text/*')) {
@@ -304,6 +308,56 @@ router.post(
 router.get('/token/latest', async (_req, res) => {
   const token = await ZaloToken.findOne().sort({ createdAt: -1 });
   res.json(token);
+});
+//-------------------------------------------TESTING ROUTES-------------------------------------------//
+// route test giả lập isOnline
+router.patch('/guest-users/:userId/online', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { userId } = req.params;
+    const { isOnline } = req.body as { isOnline: boolean };
+
+    const updated = await GuestUser.findByIdAndUpdate(userId, { isOnline }, { new: true });
+
+    if (!updated) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    res.json({ success: true, user: updated });
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET tất cả guest users
+router.get('/guest-users', async (_req, res) => {
+  try {
+    const guests = await GuestUser.find().lean();
+    res.json(guests);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Hoặc GET messages của 1 user
+router.get('/messages/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const messages = await ZaloMessageModel.find({ userId }).sort({ sentAt: 1 }).lean();
+
+    // Thêm trạng thái online từ GuestUser
+    const messagesWithOnline = await Promise.all(
+      messages.map(async (msg) => {
+        const guest = await GuestUser.findById(msg.userId);
+        return { ...msg, isOnline: guest?.isOnline ?? false };
+      })
+    );
+
+    res.json(messagesWithOnline);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 export default router;
