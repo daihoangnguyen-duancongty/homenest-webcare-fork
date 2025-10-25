@@ -35,11 +35,7 @@ import { assignTelesale } from './../../api/zaloApi';
 import { getTelesales, type Telesales } from './../../api/authApi';
 import { getToken } from './../../utils/auth';
 import { BASE_URL } from './../../api/zaloApi';
-import {
-  initSocket,
-  subscribeRealtimeEvents,
-  unsubscribeRealtimeEvents,
-} from '../../utils/socketClient';
+import { useSocketStore } from '../../store/socketStore';
 
 export type ModuleKey = 'chat' | 'employee' | 'automation' | 'reports';
 
@@ -91,6 +87,9 @@ export default function Sidebar({
   setIsExpanded,
   role = 'telesale',
 }: SidebarProps) {
+  // dùng zutand quản lý socket
+  const { socket, isConnected } = useSocketStore();
+  //
   const [conversations, setConversations] = useState<ConversationWithAssign[]>([]);
   const [activeUser, setActiveUser] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<ModuleKey>('chat');
@@ -181,37 +180,44 @@ export default function Sidebar({
     setHasMore(true);
     loadConversations(1);
   }, [role]);
-  // Kết nối socket và lắng nghe sự kiện realtime
+  // Kết nối socket và lắng nghe sự kiện realtime -> nhan du kieu tu store zustand
   useEffect(() => {
-    const socket = initSocket();
+    if (!socket || !isConnected) return;
 
-    // Lắng nghe realtime
-    subscribeRealtimeEvents({
-      onUserOnline: ({ userId, isOnline }) => {
-        setConversations((prev) =>
-          prev.map((conv) => (conv.userId === userId ? { ...conv, isOnline } : conv))
-        );
-      },
-      onNewMessage: ({ userId, message }) => {
-        setConversations((prev) =>
-          prev.map((conv) =>
-            conv.userId === userId
-              ? {
-                  ...conv,
-                  messages: [...(conv.messages || []), message],
-                  unreadCount: conv.userId === activeUser ? 0 : (conv.unreadCount || 0) + 1,
-                  hasNewMessage: conv.userId !== activeUser,
-                }
-              : conv
-          )
-        );
-      },
-    });
+    console.log('🟢 Sidebar subscribing to realtime events...');
+
+    const handleUserOnline = ({ userId, isOnline }: { userId: string; isOnline: boolean }) => {
+      console.log('👤 user_online:', userId, isOnline);
+      setConversations((prev) =>
+        prev.map((conv) => (conv.userId === userId ? { ...conv, isOnline } : conv))
+      );
+    };
+
+    const handleNewMessage = ({ userId, message }: { userId: string; message: Message }) => {
+      console.log('💬 new_message:', userId, message);
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.userId === userId
+            ? {
+                ...conv,
+                messages: [...(conv.messages || []), message],
+                unreadCount: conv.userId === activeUser ? 0 : (conv.unreadCount || 0) + 1,
+                hasNewMessage: conv.userId !== activeUser,
+              }
+            : conv
+        )
+      );
+    };
+
+    socket.on('user_online', handleUserOnline);
+    socket.on('new_message', handleNewMessage);
 
     return () => {
-      unsubscribeRealtimeEvents();
+      console.log('🔴 Sidebar unsubscribing from realtime events...');
+      socket.off('user_online', handleUserOnline);
+      socket.off('new_message', handleNewMessage);
     };
-  }, [activeUser]);
+  }, [socket, isConnected, activeUser]);
 
   // Handle selecting a user
   const handleSelectUser = async (c: ConversationWithAssign) => {

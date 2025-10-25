@@ -1,13 +1,21 @@
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Auth/Login';
 import Signup from './pages/Auth/Signup';
 import AdminDashboard from './pages/AdminDashboard';
 import TelesaleDashboard from './pages/TelesaleDashboard';
 import { getCurrentUser } from './utils/auth';
-import ProtectRoute from './routes/ProtectRoute'; // ✅ import ProtectRoute
+import ProtectRoute from './routes/ProtectRoute'; // ProtectRoute
+import { useSocketStore } from './store/socketStore';
 
 function App() {
   const user = getCurrentUser();
+  const { initSocket, disconnectSocket } = useSocketStore();
+
+  useEffect(() => {
+    initSocket();
+    return () => disconnectSocket();
+  }, []);
 
   const getHomeRedirect = () => {
     if (!user) return <Navigate to="/login" replace />;
