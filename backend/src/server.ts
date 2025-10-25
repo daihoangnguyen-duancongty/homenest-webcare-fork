@@ -34,7 +34,6 @@ const PORT: number = parseInt(process.env.PORT || '5000', 10);
 // ✅ Đảm bảo thư mục uploads tồn tại (Render sẽ không tự tạo)
 import fs from 'fs';
 
-
 const uploadDir = path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -50,20 +49,20 @@ app.get('/zalodomainverify.txt', (req: Request, res: Response) => {
   res.sendFile(filePath);
 });
 
-
-
 // -------------------- Middleware chung--------------------
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 //---------------------Session Middleware for routes Zalo V4 User Access Token------------
 
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'keyboard-cat',
-  resave: false,
-  saveUninitialized: true,
-  cookie: { secure: false },
-}));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'keyboard-cat',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false },
+  })
+);
 
 // -------------------- Routes sử dụng session----------------------------------------------------------------------------------------------
 
@@ -72,7 +71,6 @@ app.use('/api/zalo-user', zaloUserRoutes);
 
 // -------------------- Static Files --------------------
 app.use('/uploads', express.static(uploadDir));
-
 
 // -------------------- API Routes --------------------
 app.use('/api/products', productRoutes);
@@ -91,22 +89,35 @@ const io = new Server(server, {
 
 io.on('connection', (socket) => {
   console.log('🔌 Client connected:', socket.id);
-
+  // 🔹 Khai báo biến lưu user hiện tại
+  let currentUserId: string | null = null;
+  // Khi user tham gia
   socket.on('join', async (userId: string) => {
+    currentUserId = userId; // ✅ Gán userId khi join
     socket.join(userId);
     console.log(`👥 ${socket.id} joined room ${userId}`);
 
-    // đánh dấu online
+    // Đánh dấu online
     await GuestUser.findByIdAndUpdate(userId, { isOnline: true });
-    // emit trạng thái mới
     io.emit('user_online', { userId, isOnline: true });
+  });
+
+  // Khi user rời khỏi
+  socket.on('leave', async (userId: string) => {
+    socket.leave(userId);
+    console.log(`👋 ${socket.id} left room ${userId}`);
+    await GuestUser.findByIdAndUpdate(userId, { isOnline: false });
+    io.emit('user_online', { userId, isOnline: false });
   });
 
   socket.on('disconnect', async () => {
     console.log('❌ Client disconnected:', socket.id);
 
-    // có thể lấy userId từ rooms để update offline
-    // hoặc frontend emit "leave"
+    if (currentUserId) {
+      await GuestUser.findByIdAndUpdate(currentUserId, { isOnline: false });
+      io.emit('user_online', { userId: currentUserId, isOnline: false });
+      console.log(`📴 ${currentUserId} set offline`);
+    }
   });
 });
 

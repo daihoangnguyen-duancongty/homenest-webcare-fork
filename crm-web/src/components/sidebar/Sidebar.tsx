@@ -35,6 +35,11 @@ import { assignTelesale } from './../../api/zaloApi';
 import { getTelesales, type Telesales } from './../../api/authApi';
 import { getToken } from './../../utils/auth';
 import { BASE_URL } from './../../api/zaloApi';
+import {
+  initSocket,
+  subscribeRealtimeEvents,
+  unsubscribeRealtimeEvents,
+} from '../../utils/socketClient';
 
 export type ModuleKey = 'chat' | 'employee' | 'automation' | 'reports';
 
@@ -62,6 +67,7 @@ export interface ConversationWithAssign extends Conversation {
   unreadCount?: number;
   hasNewMessage?: boolean;
   avatarUrl?: string;
+  isOnline?: boolean;
 }
 
 const blink = keyframes`
@@ -175,6 +181,37 @@ export default function Sidebar({
     setHasMore(true);
     loadConversations(1);
   }, [role]);
+  // Kết nối socket và lắng nghe sự kiện realtime
+  useEffect(() => {
+    const socket = initSocket();
+
+    // Lắng nghe realtime
+    subscribeRealtimeEvents({
+      onUserOnline: ({ userId, isOnline }) => {
+        setConversations((prev) =>
+          prev.map((conv) => (conv.userId === userId ? { ...conv, isOnline } : conv))
+        );
+      },
+      onNewMessage: ({ userId, message }) => {
+        setConversations((prev) =>
+          prev.map((conv) =>
+            conv.userId === userId
+              ? {
+                  ...conv,
+                  messages: [...(conv.messages || []), message],
+                  unreadCount: conv.userId === activeUser ? 0 : (conv.unreadCount || 0) + 1,
+                  hasNewMessage: conv.userId !== activeUser,
+                }
+              : conv
+          )
+        );
+      },
+    });
+
+    return () => {
+      unsubscribeRealtimeEvents();
+    };
+  }, [activeUser]);
 
   // Handle selecting a user
   const handleSelectUser = async (c: ConversationWithAssign) => {
@@ -428,7 +465,25 @@ export default function Sidebar({
                 >
                   {/* Avatar + Text */}
                   <Box display="flex" alignItems="center" flex="1" minWidth={0}>
-                    <Avatar src={(c as any).avatarUrl} sx={{ width: 40, height: 40, mr: 2 }} />
+                    <Box sx={{ position: 'relative', mr: 2 }}>
+                      <Avatar src={c.avatarUrl ?? ''} sx={{ width: 40, height: 40 }} />
+
+                      {c.isOnline && (
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            bottom: 2,
+                            right: 2,
+                            width: 10,
+                            height: 10,
+                            bgcolor: '#4caf50',
+                            borderRadius: '50%',
+                            border: '2px solid white',
+                          }}
+                        />
+                      )}
+                    </Box>
+
                     <Box sx={{ minWidth: 0 }}>
                       <Typography
                         noWrap
@@ -821,7 +876,25 @@ export default function Sidebar({
                   >
                     {/* Avatar + Text */}
                     <Box display="flex" alignItems="center" flex="1" minWidth={0}>
-                      <Avatar src={(c as any).avatarUrl} sx={{ width: 40, height: 40, mr: 2 }} />
+                      <Box sx={{ position: 'relative', mr: 2 }}>
+                        <Avatar src={c.avatarUrl ?? ''} sx={{ width: 40, height: 40 }} />
+
+                        {c.isOnline && (
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              bottom: 2,
+                              right: 2,
+                              width: 10,
+                              height: 10,
+                              bgcolor: '#4caf50',
+                              borderRadius: '50%',
+                              border: '2px solid white',
+                            }}
+                          />
+                        )}
+                      </Box>
+
                       <Box sx={{ minWidth: 0 }}>
                         <Typography
                           noWrap
