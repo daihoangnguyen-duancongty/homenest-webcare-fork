@@ -1,11 +1,12 @@
 export interface Message {
-  id: string;
+  _id: string;
   userId: string;
   text: string;
   sentAt: string;
   success: boolean;
   response?: Record<string, unknown>; //  thay vì any
   assignedTelesale?: string | null;
+  username?: string;
   from?: 'user' | 'admin' | 'telesale';
 }
 

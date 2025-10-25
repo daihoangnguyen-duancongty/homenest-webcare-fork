@@ -36,6 +36,8 @@ import { getTelesales, type Telesales } from './../../api/authApi';
 import { getToken } from './../../utils/auth';
 import { BASE_URL } from './../../api/zaloApi';
 import { useSocketStore } from '../../store/socketStore';
+import type { UserOnlinePayload, NewMessagePayload } from '../../types/socket';
+import type { Message } from '../../types/index';
 
 export type ModuleKey = 'chat' | 'employee' | 'automation' | 'reports';
 
@@ -49,13 +51,6 @@ export interface SidebarProps {
   setMobileOpen?: (val: boolean) => void;
 }
 
-export interface Message {
-  _id: string;
-  text: string;
-  read?: boolean;
-  [key: string]: any;
-}
-
 export interface ConversationWithAssign extends Conversation {
   isAssignMenuOpen?: boolean;
   showAssignSubmenu?: boolean;
@@ -64,6 +59,7 @@ export interface ConversationWithAssign extends Conversation {
   hasNewMessage?: boolean;
   avatarUrl?: string;
   isOnline?: boolean;
+  lastInteraction?: string;
 }
 
 const blink = keyframes`
@@ -155,6 +151,7 @@ export default function Sidebar({
           name: c.username,
           avatarUrl: c.avatar,
           lastMessage: c.lastMessage ?? '',
+          lastInteraction: c.lastInteraction,
         })
       );
 
@@ -186,26 +183,35 @@ export default function Sidebar({
 
     console.log('🟢 Sidebar subscribing to realtime events...');
 
-    const handleUserOnline = ({ userId, isOnline }: { userId: string; isOnline: boolean }) => {
+    const handleUserOnline = ({ userId, isOnline }: UserOnlinePayload) => {
       console.log('👤 user_online:', userId, isOnline);
       setConversations((prev) =>
         prev.map((conv) => (conv.userId === userId ? { ...conv, isOnline } : conv))
       );
     };
 
-    const handleNewMessage = ({ userId, message }: { userId: string; message: Message }) => {
-      console.log('💬 new_message:', userId, message);
+    const handleNewMessage = ({ userId, message, lastInteraction }: NewMessagePayload) => {
       setConversations((prev) =>
-        prev.map((conv) =>
-          conv.userId === userId
-            ? {
-                ...conv,
-                messages: [...(conv.messages || []), message],
-                unreadCount: conv.userId === activeUser ? 0 : (conv.unreadCount || 0) + 1,
-                hasNewMessage: conv.userId !== activeUser,
-              }
-            : conv
-        )
+        prev
+          .map((conv) =>
+            conv.userId === userId
+              ? {
+                  ...conv,
+                  messages: [
+                    ...conv.messages,
+                    { ...message, _id: (message as Message)._id ?? Date.now().toString() },
+                  ],
+                  unreadCount: conv.userId === activeUser ? 0 : (conv.unreadCount || 0) + 1,
+                  hasNewMessage: conv.userId !== activeUser,
+                  lastInteraction,
+                }
+              : conv
+          )
+          .sort(
+            (a, b) =>
+              new Date(b.lastInteraction ?? 0).getTime() -
+              new Date(a.lastInteraction ?? 0).getTime()
+          )
       );
     };
 

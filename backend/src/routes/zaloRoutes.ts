@@ -12,6 +12,7 @@ import ZaloToken from '../models/ZaloToken';
 import { createCallController } from '../controllers/zaloCallController';
 
 const router = Router();
+const ONLINE_THRESHOLD_MS = 5 * 60 * 1000;
 
 // Middleware parse text/plain
 router.use('/webhook', (req: Request, _res: Response, next: NextFunction) => {
@@ -56,7 +57,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
     const guestData = createMockUser(userId);
     const guest = await GuestUser.findOneAndUpdate(
       { _id: userId },
-      { $setOnInsert: guestData },
+      { $set: { lastInteraction: new Date() }, $setOnInsert: guestData },
       { upsert: true, new: true }
     );
 
@@ -77,7 +78,9 @@ router.post('/webhook', async (req: Request, res: Response) => {
     admins.forEach((a) =>
       io.to((a._id as any).toString()).emit('new_message', {
         ...saved.toObject(),
-        isOnline: guest.isOnline ?? false, // thêm isOnline
+        isOnline: guest?.lastInteraction
+          ? Date.now() - guest.lastInteraction.getTime() < ONLINE_THRESHOLD_MS
+          : false, // thêm isOnline
       })
     );
 
@@ -119,7 +122,10 @@ router.get(
         if (!conversations[userId]) conversations[userId] = { userId, messages: [] };
 
         const guest = await GuestUser.findById(userId);
-        const isOnline = guest?.isOnline ?? false;
+
+        const isOnline = guest?.lastInteraction
+          ? Date.now() - guest.lastInteraction.getTime() < ONLINE_THRESHOLD_MS
+          : false;
 
         conversations[userId].messages.push({ ...msg, isOnline } as any);
       }
@@ -270,7 +276,10 @@ router.get('/messages/:userId', async (req, res) => {
     const messagesWithOnline = await Promise.all(
       messages.map(async (msg) => {
         const guest = await GuestUser.findById(msg.userId);
-        return { ...msg, isOnline: guest?.isOnline ?? false };
+        const isOnline = guest?.lastInteraction
+          ? Date.now() - guest.lastInteraction.getTime() < ONLINE_THRESHOLD_MS
+          : false;
+        return { ...msg, isOnline };
       })
     );
 
@@ -304,37 +313,6 @@ router.post(
 router.get('/token/latest', async (_req, res) => {
   const token = await ZaloToken.findOne().sort({ createdAt: -1 });
   res.json(token);
-});
-//-------------------------------------------TESTING ROUTES-------------------------------------------//
-
-// GET tất cả guest users
-router.get('/guest-users', async (_req, res) => {
-  try {
-    const guests = await GuestUser.find().lean();
-    res.json(guests);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Hoặc GET messages của 1 user
-router.get('/messages/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const messages = await ZaloMessageModel.find({ userId }).sort({ sentAt: 1 }).lean();
-
-    // Thêm trạng thái online từ GuestUser
-    const messagesWithOnline = await Promise.all(
-      messages.map(async (msg) => {
-        const guest = await GuestUser.findById(msg.userId);
-        return { ...msg, isOnline: guest?.isOnline ?? false };
-      })
-    );
-
-    res.json(messagesWithOnline);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
 });
 
 export default router;

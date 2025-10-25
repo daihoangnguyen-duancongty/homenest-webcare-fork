@@ -7,6 +7,7 @@ export interface IGuestUser extends Document {
   email?: string;
   avatar?: string;
   isOnline?: boolean;
+  lastInteraction?: Date;
   assignedTelesale?: string | null;
 }
 
@@ -17,6 +18,7 @@ const guestUserSchema = new Schema<IGuestUser>(
     email: { type: String },
     avatar: { type: String },
     isOnline: { type: Boolean, default: false },
+    lastInteraction: { type: Date, default: null },
     assignedTelesale: { type: String, default: null },
   },
   { timestamps: true }
