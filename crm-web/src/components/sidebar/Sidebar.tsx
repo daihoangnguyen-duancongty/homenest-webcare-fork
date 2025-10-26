@@ -296,7 +296,7 @@ export default function Sidebar({
             transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
             overflow: 'hidden',
             boxShadow: 4,
-            zIndex: 1000,
+            zIndex: 3000,
             display: 'flex',
             flexDirection: 'column',
           }}
@@ -750,7 +750,7 @@ export default function Sidebar({
               position: 'fixed',
               top: '0.2vh',
               left: '90vw',
-              zIndex: 2100,
+              zIndex: 3000,
               bgcolor: '#448f2bff',
               color: 'white',
               '&:hover': { bgcolor: '#1a237e' },

@@ -25,6 +25,8 @@ interface ChatPanelProps {
   role?: 'admin' | 'telesale';
   onLoaded?: () => void;
   onClose?: (userId: string) => void;
+  onClick?: () => void;
+  sx?: object;
 }
 
 export interface Message {
@@ -38,7 +40,14 @@ export interface Message {
   isOnline?: boolean;
 }
 
-export default function ChatPanel({ userId, role, onLoaded, onClose }: ChatPanelProps) {
+export default function ChatPanel({
+  userId,
+  role,
+  onLoaded,
+  onClose,
+  onClick,
+  sx,
+}: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
   const [loadingMore, setLoadingMore] = useState(false);
@@ -71,31 +80,38 @@ export default function ChatPanel({ userId, role, onLoaded, onClose }: ChatPanel
   };
 
   const onResizeMouseDown = (e: React.MouseEvent) => {
-    e.stopPropagation();
+    e.stopPropagation(); // chặn drag
     setResizing(true);
     resizeStartRef.current = { x: e.clientX, y: e.clientY, width: size.width, height: size.height };
   };
 
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
-      if (dragging)
+      if (dragging) {
         setPosition({
           left: e.clientX - dragStartRef.current.x,
           top: e.clientY - dragStartRef.current.y,
         });
-      if (resizing)
+      }
+      if (resizing) {
         setSize({
-          width: Math.max(300, resizeStartRef.current.width + e.clientX - resizeStartRef.current.x),
+          width: Math.max(
+            300,
+            resizeStartRef.current.width + (e.clientX - resizeStartRef.current.x)
+          ),
           height: Math.max(
             300,
-            resizeStartRef.current.height + e.clientY - resizeStartRef.current.y
+            resizeStartRef.current.height + (e.clientY - resizeStartRef.current.y)
           ),
         });
+      }
     };
+
     const onMouseUp = () => {
       setDragging(false);
       setResizing(false);
     };
+
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
     return () => {
@@ -226,6 +242,7 @@ export default function ChatPanel({ userId, role, onLoaded, onClose }: ChatPanel
   // ----------------- Render -----------------
   return (
     <Paper
+      onClick={() => onClick?.()}
       elevation={6}
       sx={{
         position: 'absolute',
@@ -239,7 +256,8 @@ export default function ChatPanel({ userId, role, onLoaded, onClose }: ChatPanel
         overflow: 'hidden',
         cursor: dragging ? 'grabbing' : 'grab',
         userSelect: dragging ? 'none' : 'auto',
-        zIndex: 100,
+        zIndex: 100, // mặc định, sẽ override bằng sx từ AdminDashboard
+        ...sx,
       }}
     >
       {/* Header */}

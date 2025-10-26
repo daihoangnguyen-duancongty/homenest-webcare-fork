@@ -8,7 +8,7 @@ import type { ModuleKey } from './../components/sidebar/Sidebar';
 
 export default function AdminDashboard() {
   const [openChats, setOpenChats] = useState<string[]>([]);
-
+  const [activeChat, setActiveChat] = useState<string | null>(null);
   const [activeModule, setActiveModule] = useState<ModuleKey>('chat');
   // const [globalLoading, setGlobalLoading] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
@@ -55,21 +55,25 @@ export default function AdminDashboard() {
         }}
       >
         {activeModule === 'chat' &&
-          openChats.map((userId, idx) => (
-            <ChatPanel
-              key={userId}
-              userId={userId}
-              role="admin"
-              onClose={() => handleCloseChat(userId)}
-              sx={{
-                position: 'fixed',
-                bottom: 0,
-                right: 20 + idx * 340,
-                width: 320,
-                minWidth: 320,
-              }}
-            />
-          ))}
+          openChats.map((userId, idx) => {
+            const isActive = activeChat === userId;
+            return (
+              <ChatPanel
+                key={userId}
+                userId={userId}
+                role="admin"
+                onClose={() => handleCloseChat(userId)}
+                onClick={() => setActiveChat(userId)} // khi click chat, set active
+                sx={{
+                  position: 'fixed',
+                  bottom: 0,
+                  right: 20 + idx * 340,
+
+                  zIndex: isActive ? 2000 : 1000 + idx, // z-index động
+                }}
+              />
+            );
+          })}
 
         {activeModule === 'employee' && <EmployeePanel />}
       </Box>
