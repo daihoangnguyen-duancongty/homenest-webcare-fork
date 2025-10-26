@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import User, { IUser } from '../models/User';
+import User from '../models/User';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error('JWT_SECRET environment variable is not defined.');
@@ -9,8 +9,9 @@ if (!JWT_SECRET) throw new Error('JWT_SECRET environment variable is not defined
 // ------------------ Register ------------------
 export const register = async (req: Request, res: Response): Promise<void> => {
   const { email, password, confirmPassword, username, phone, address, role } = req.body;
-  const file = req.file; // Nếu dùng multer để upload avatar
+  const file = req.file; // multer sẽ lưu file vào đây nếu upload
 
+  // Kiểm tra dữ liệu bắt buộc
   if (!email || !password || !confirmPassword || !username || !phone || !address) {
     res.status(400).json({ message: 'Thiếu thông tin đăng ký.' });
     return;
@@ -22,15 +23,18 @@ export const register = async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
-    const existing: IUser | null = await User.findOne({ email });
+    // Kiểm tra email tồn tại
+    const existing = await User.findOne({ email });
     if (existing) {
       res.status(400).json({ message: 'Email đã tồn tại.' });
       return;
     }
 
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser: IUser = new User({
+    // Tạo user mới
+    const newUser = new User({
       email,
       password: hashedPassword,
       username,
@@ -79,7 +83,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
-    const user: IUser | null = await User.findOne({ email });
+    const user = await User.findOne({ email });
     if (!user) {
       res.status(401).json({ message: 'Email không tồn tại.' });
       return;
