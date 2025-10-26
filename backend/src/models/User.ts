@@ -2,6 +2,7 @@ import { Schema, Document } from 'mongoose';
 import { userDB } from '../database/connection';
 import bcrypt from 'bcryptjs';
 
+// Interface IUser mở rộng Document của Mongoose
 export interface IUser extends Document {
   username: string;
   phone: string;
@@ -9,7 +10,15 @@ export interface IUser extends Document {
   email: string;
   password: string;
   role: 'admin' | 'telesale';
-  comparePassword?: (plain: string) => Promise<boolean>;
+  avatar?: {
+    path: string;
+    filename: string;
+    originalname: string;
+  };
+  comparePassword: (plain: string) => Promise<boolean>;
+
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const userSchema = new Schema<IUser>(
@@ -20,6 +29,11 @@ const userSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true },
     role: { type: String, enum: ['admin', 'telesale'], default: 'telesale' },
+    avatar: {
+      path: String,
+      filename: String,
+      originalname: String,
+    },
   },
   { timestamps: true }
 );

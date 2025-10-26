@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import User from '../models/User';
+import User, { IUser } from '../models/User';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error('JWT_SECRET environment variable is not defined.');
@@ -9,6 +9,7 @@ if (!JWT_SECRET) throw new Error('JWT_SECRET environment variable is not defined
 // ------------------ Register ------------------
 export const register = async (req: Request, res: Response): Promise<void> => {
   const { email, password, confirmPassword, username, phone, address, role } = req.body;
+  const file = req.file; // Nếu dùng multer để upload avatar
 
   if (!email || !password || !confirmPassword || !username || !phone || !address) {
     res.status(400).json({ message: 'Thiếu thông tin đăng ký.' });
@@ -21,7 +22,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
-    const existing = await User.findOne({ email });
+    const existing: IUser | null = await User.findOne({ email });
     if (existing) {
       res.status(400).json({ message: 'Email đã tồn tại.' });
       return;
@@ -29,13 +30,20 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = new User({
+    const newUser: IUser = new User({
       email,
       password: hashedPassword,
       username,
       phone,
       address,
       role: role || 'telesale',
+      avatar: file
+        ? {
+            path: file.path,
+            filename: file.filename,
+            originalname: file.originalname,
+          }
+        : undefined,
     });
 
     await newUser.save();
@@ -43,13 +51,21 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     res.status(201).json({
       message: 'Đăng ký thành công.',
-      user: { id: newUser._id, username: newUser.username, role: newUser.role },
+      user: {
+        id: newUser._id,
+        username: newUser.username,
+        email: newUser.email,
+        phone: newUser.phone,
+        address: newUser.address,
+        role: newUser.role,
+        avatar: newUser.avatar,
+        createdAt: newUser.createdAt,
+        updatedAt: newUser.updatedAt,
+      },
     });
-    return; // explicit return void
   } catch (err: any) {
     console.error('Register Error:', err);
     res.status(500).json({ message: 'Lỗi server khi đăng ký.', error: err.message });
-    return;
   }
 };
 
@@ -63,7 +79,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
-    const user = await User.findOne({ email });
+    const user: IUser | null = await User.findOne({ email });
     if (!user) {
       res.status(401).json({ message: 'Email không tồn tại.' });
       return;
@@ -87,12 +103,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         phone: user.phone,
         address: user.address,
         role: user.role,
+        avatar: user.avatar,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
       },
     });
-    return;
   } catch (err: any) {
     console.error('Login Error:', err);
     res.status(500).json({ message: 'Lỗi server khi đăng nhập.', error: err.message });
-    return;
   }
 };
