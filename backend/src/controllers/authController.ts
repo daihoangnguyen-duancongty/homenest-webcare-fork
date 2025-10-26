@@ -1,81 +1,65 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
+import bcrypt from 'bcryptjs';
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) throw new Error('JWT_SECRET environment variable is not defined.');
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 
-// ------------------ Register ------------------
+// ------------------ Hàm đăng ký ------------------
 export const register = async (req: Request, res: Response): Promise<void> => {
-  const { email, password, confirmPassword, username, phone, address, role } = req.body;
-  const file = req.file; // multer sẽ lưu file vào đây nếu upload
+  const email = req.body.email?.trim();
+  const password = req.body.password?.trim();
+  const confirmPassword = req.body.confirmPassword?.trim();
+  const username = req.body.username?.trim();
+  const phone = req.body.phone?.trim();
+  const address = req.body.address?.trim();
+  const role = req.body.role?.trim() as 'admin' | 'telesale' | undefined;
+  const avatar = req.file;
 
-  // Kiểm tra dữ liệu bắt buộc
   if (!email || !password || !confirmPassword || !username || !phone || !address) {
     res.status(400).json({ message: 'Thiếu thông tin đăng ký.' });
     return;
   }
-
   if (password !== confirmPassword) {
     res.status(400).json({ message: 'Mật khẩu xác nhận không khớp.' });
     return;
   }
 
   try {
-    // Kiểm tra email tồn tại
     const existing = await User.findOne({ email });
     if (existing) {
       res.status(400).json({ message: 'Email đã tồn tại.' });
       return;
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Tạo user mới
     const newUser = new User({
       email,
-      password: hashedPassword,
+      password, // Mongoose pre('save') sẽ hash tự động
       username,
       phone,
       address,
-      role: role || 'telesale',
-      avatar: file
-        ? {
-            path: file.path,
-            filename: file.filename,
-            originalname: file.originalname,
-          }
+      avatar: avatar
+        ? { path: avatar.path, filename: avatar.filename, originalname: avatar.originalname }
         : undefined,
+      role: role || 'telesale',
     });
 
     await newUser.save();
-    console.log(`✅ Tạo user mới: ${username} với role: ${newUser.role}`);
 
     res.status(201).json({
       message: 'Đăng ký thành công.',
-      user: {
-        id: newUser._id,
-        username: newUser.username,
-        email: newUser.email,
-        phone: newUser.phone,
-        address: newUser.address,
-        role: newUser.role,
-        avatar: newUser.avatar,
-        createdAt: newUser.createdAt,
-        updatedAt: newUser.updatedAt,
-      },
+      user: { id: newUser._id, username: newUser.username, role: newUser.role },
     });
-  } catch (err: any) {
+  } catch (err) {
     console.error('Register Error:', err);
-    res.status(500).json({ message: 'Lỗi server khi đăng ký.', error: err.message });
+    res.status(500).json({ message: 'Lỗi server khi đăng ký.' });
   }
 };
 
-// ------------------ Login ------------------
+// ------------------ Hàm đăng nhập ------------------
 export const login = async (req: Request, res: Response): Promise<void> => {
-  const { email, password } = req.body;
+  const email = req.body.email?.trim();
+  const password = req.body.password?.trim();
 
   if (!email || !password) {
     res.status(400).json({ message: 'Thiếu email hoặc mật khẩu.' });
@@ -89,7 +73,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       res.status(401).json({ message: 'Mật khẩu không đúng.' });
       return;
@@ -106,14 +90,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         username: user.username,
         phone: user.phone,
         address: user.address,
-        role: user.role,
         avatar: user.avatar,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
+        role: user.role,
       },
     });
-  } catch (err: any) {
+    console.log('Stored hash:', user.password);
+    console.log('Plain input:', password);
+  } catch (err) {
     console.error('Login Error:', err);
-    res.status(500).json({ message: 'Lỗi server khi đăng nhập.', error: err.message });
+    res.status(500).json({ message: 'Lỗi server khi đăng nhập.' });
   }
 };

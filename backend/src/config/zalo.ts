@@ -1,5 +1,7 @@
-export const ZALO_CONFIG = {
-  APP_ID: process.env.ZALO_APP_ID || 'your_app_id',
-  APP_SECRET: process.env.ZALO_APP_SECRET || 'your_app_secret',
-  REFRESH_TOKEN: process.env.ZALO_REFRESH_TOKEN || 'your_refresh_token',
-};
+export function getZaloConfig() {
+  return {
+    APP_ID: process.env.ZALO_APP_ID || "1729920386336093975",
+    APP_SECRET: process.env.ZALO_APP_SECRET || "ePSh5U838W6H3q7C8BA2", // chính là secret_key
+    REFRESH_TOKEN: process.env.ZALO_REFRESH_TOKEN || "s54CT-s3BmZQMmrpxeC...", // của bạn
+  };
+}

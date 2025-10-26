@@ -1,29 +1,41 @@
-import { Schema, model, Document } from "mongoose";
-import GuestUser, { IGuestUser } from "./ZaloGuestUser";
-import { zaloMessageDB } from "../database/connection";
+import { Schema, Document } from 'mongoose';
+import { zaloMessageDB } from '../database/connection';
+import GuestUser, { IGuestUser } from './ZaloGuestUser';
 
 export interface IZaloMessage extends Document {
-  userId: string | IGuestUser; // userId là string (Zalo) hoặc GuestUser document
+  userId: string | IGuestUser; // liên kết tới GuestUser
   text: string;
-  sentAt: Date;
-  success: boolean;
-  response?: any;
   username?: string;
-  avatar?: string;
-  createdAt: Date;
+  avatar?: string | null;
+  senderType?: 'admin' | 'customer' | 'telesale';
+  success: boolean;
+  response: any;
+  assignedTelesale?: string;
+  sentAt?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+  read?: boolean;
 }
 
 const ZaloMessageSchema = new Schema<IZaloMessage>(
   {
-    userId: { type: String, ref: "GuestUser", required: true },
+    userId: { type: String, ref: 'GuestUser', required: true },
     text: { type: String, required: true },
     sentAt: { type: Date, default: Date.now },
     success: { type: Boolean, required: true },
     response: { type: Schema.Types.Mixed },
     username: { type: String },
     avatar: { type: String },
+    assignedTelesale: { type: String, default: null },
+    senderType: { type: String, enum: ['admin', 'telesale', 'customer'], default: 'customer' },
+    read: { type: Boolean, default: false },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );
 
-export default zaloMessageDB.model<IZaloMessage>("ZaloMessage", ZaloMessageSchema, "zaloMessages");
+const ZaloMessageModel = zaloMessageDB.model<IZaloMessage>(
+  'ZaloMessage',
+  ZaloMessageSchema,
+  'zaloMessages'
+);
+export default ZaloMessageModel;

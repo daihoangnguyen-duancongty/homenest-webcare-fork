@@ -1,16 +1,26 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import UserModel from '../models/User';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 
-// Mở rộng Request để bao gồm thuộc tính user
+// Mở rộng Request để bao gồm user
 export interface AuthRequest extends Request {
-  user?: { role: 'admin' | 'customer' | 'telesale'; [key: string]: any };
+  user?: {
+    id: string;
+    email?: string;
+    username?: string;
+    role: 'admin' | 'telesale';
+      avatar?: string | { path?: string; filename?: string; originalname?: string };
+    [key: string]: any;
+    
+  };
 }
 
-export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
+// ✅ Middleware xác thực JWT và load user từ DB
+export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.split(' ')[1]; // Bearer <token>
 
   if (!token) {
     res.status(401).json({ message: 'Không có token, truy cập bị từ chối.' });
@@ -18,16 +28,24 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
   }
 
   try {
-    // Ép kiểu giá trị decoded thành { role: "admin" | "customer" | "telesale"; ... }
-    const decoded = jwt.verify(token, JWT_SECRET) as {
-      role: 'admin' | 'customer' | 'telesale';
-      [key: string]: any;
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string; role: string };
+    const user = await UserModel.findById(decoded.id).select('-password');
+    if (!user) {
+      res.status(404).json({ message: 'Không tìm thấy người dùng.' });
+      return;
+    }
+
+    req.user = {
+      id: user._id.toString(),
+      email: user.email,
+      username: user.username,
+      role: user.role,
+      avatar: user.avatar,
     };
-    console.log('Decoded user từ token:', decoded);
-    req.user = decoded; // Lưu thông tin user vào req để dùng ở route sau
+
     next();
   } catch (err) {
+    console.error('❌ Lỗi xác thực JWT:', err);
     res.status(403).json({ message: 'Token không hợp lệ.' });
-    return;
   }
 };
