@@ -45,9 +45,11 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       message: 'Đăng ký thành công.',
       user: { id: newUser._id, username: newUser.username, role: newUser.role },
     });
+    return; // explicit return void
   } catch (err: any) {
     console.error('Register Error:', err);
     res.status(500).json({ message: 'Lỗi server khi đăng ký.', error: err.message });
+    return;
   }
 };
 
@@ -62,10 +64,16 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
   try {
     const user = await User.findOne({ email });
-    if (!user) return res.status(401).json({ message: 'Email không tồn tại.' });
+    if (!user) {
+      res.status(401).json({ message: 'Email không tồn tại.' });
+      return;
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ message: 'Mật khẩu không đúng.' });
+    if (!isMatch) {
+      res.status(401).json({ message: 'Mật khẩu không đúng.' });
+      return;
+    }
 
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
@@ -81,8 +89,10 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         role: user.role,
       },
     });
+    return;
   } catch (err: any) {
     console.error('Login Error:', err);
     res.status(500).json({ message: 'Lỗi server khi đăng nhập.', error: err.message });
+    return;
   }
 };
