@@ -9,7 +9,7 @@ export interface Message {
   username?: string;
   from?: 'user' | 'admin' | 'telesale';
 }
-
+export type UserWithOnline = User & { isOnline?: boolean };
 export interface User {
   id: string;
   email: string;

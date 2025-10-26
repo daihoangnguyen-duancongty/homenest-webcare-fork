@@ -1,4 +1,3 @@
-// src/store/socketStore.ts
 import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
 import { BACKEND_URL } from '../api/fetcher';
@@ -17,26 +16,39 @@ export const useSocketStore = create<SocketState>((set) => ({
 
   initSocket: () => {
     const token = getToken();
-    const socket = io(BACKEND_URL, {
-      transports: ['websocket'],
-      auth: { token },
-    });
+    if (!token) {
+      console.warn('Socket not initialized: No token found');
+      return;
+    }
 
-    socket.on('connect', () => {
-      console.log('✅ Socket connected:', socket.id);
-      set({ isConnected: true });
-    });
+    // Nếu đã có socket, không tạo lại
+    set((state) => {
+      if (state.socket) return state;
+      const socket = io(BACKEND_URL, {
+        transports: ['websocket'],
+        auth: { token },
+        reconnection: true,
+        reconnectionAttempts: Infinity,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+      });
 
-    socket.on('disconnect', (reason) => {
-      console.log('❌ Socket disconnected:', reason);
-      set({ isConnected: false });
-    });
+      socket.on('connect', () => {
+        console.log('✅ Socket connected:', socket.id);
+        set({ isConnected: true });
+      });
 
-    socket.on('connect_error', (err) => {
-      console.error('⚠️ Socket connect error:', err.message);
-    });
+      socket.on('disconnect', (reason) => {
+        console.log('❌ Socket disconnected:', reason);
+        set({ isConnected: false });
+      });
 
-    set({ socket });
+      socket.on('connect_error', (err) => {
+        console.error('⚠️ Socket connect error:', err.message);
+      });
+
+      return { socket };
+    });
   },
 
   disconnectSocket: () => {

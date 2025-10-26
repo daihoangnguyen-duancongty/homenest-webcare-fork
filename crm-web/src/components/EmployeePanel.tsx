@@ -1,9 +1,25 @@
 import { useEffect, useState } from 'react';
 import {
-  Box, Typography, Button, Dialog, DialogTitle, DialogContent,
-  TextField, DialogActions, CircularProgress, IconButton, Alert,
-  Avatar, Table, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, Paper, useMediaQuery
+  Box,
+  Typography,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  TextField,
+  DialogActions,
+  CircularProgress,
+  IconButton,
+  Alert,
+  Avatar,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  useMediaQuery,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import EditIcon from '@mui/icons-material/Edit';
@@ -53,7 +69,7 @@ export default function EmployeePanel() {
       if (!token) throw new Error('Không có token');
 
       const data = await getEmployees(token);
-     
+
       setEmployees(data);
     } catch (err: any) {
       console.error('Lỗi khi load nhân viên:', err);
@@ -77,7 +93,14 @@ export default function EmployeePanel() {
       setPreview(emp.avatar || null);
     } else {
       setEditingEmployee(null);
-      setFormData({ username: '', email: '', phone: '', address: '', password: '', confirmPassword: '' });
+      setFormData({
+        username: '',
+        email: '',
+        phone: '',
+        address: '',
+        password: '',
+        confirmPassword: '',
+      });
       setPreview(null);
     }
     setAvatarFile(null);
@@ -134,15 +157,18 @@ export default function EmployeePanel() {
   return (
     <Box
       sx={{
-        p: isMobile ? 1.5 : 4,
+        p: isMobile ? 6.4 : 4,
         width: '100%',
-        maxWidth: '1700px',
+        maxWidth: '74vw',
         mx: '0vw',
-        my:'6vh'
+        my: '6vh',
       }}
     >
-    
-      {serverError && <Alert severity="error" sx={{ mb: 2 }}>{serverError}</Alert>}
+      {serverError && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {serverError}
+        </Alert>
+      )}
 
       <Box sx={{ display: 'flex', justifyContent: isMobile ? 'center' : 'flex-end', mb: 2 }}>
         <Button
@@ -197,8 +223,11 @@ export default function EmployeePanel() {
               {employees.map((emp) => (
                 <TableRow key={emp._id} hover>
                   <TableCell>
-                  
-                    <Avatar src={emp.avatar || ''} alt={emp.username} sx={{ width: 40, height: 40 }} />
+                    <Avatar
+                      src={emp.avatar || ''}
+                      alt={emp.username}
+                      sx={{ width: 40, height: 40 }}
+                    />
                   </TableCell>
                   <TableCell>{emp.username}</TableCell>
                   {!isMobile && (
@@ -224,23 +253,49 @@ export default function EmployeePanel() {
       )}
 
       {/* ✅ Dialog thêm/sửa nhân viên */}
-      <Dialog
-        open={openDialog}
-        onClose={() => setOpenDialog(false)}
-        fullWidth
-        maxWidth="xs"
-      >
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} fullWidth maxWidth="xs">
         <DialogTitle sx={{ textAlign: 'center', fontWeight: 'bold' }}>
           {editingEmployee ? 'Chỉnh sửa nhân viên' : 'Thêm nhân viên'}
         </DialogTitle>
 
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          <TextField label="Họ tên" fullWidth value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} />
-          <TextField label="Email" fullWidth value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
-          <TextField label="Số điện thoại" fullWidth value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
-          <TextField label="Địa chỉ" fullWidth value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} />
-          <TextField label="Mật khẩu" type="password" fullWidth value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
-         <TextField label="Xác nhận mật khẩu" type="password" value={formData.confirmPassword} onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })} />
+          <TextField
+            label="Họ tên"
+            fullWidth
+            value={formData.username}
+            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+          />
+          <TextField
+            label="Email"
+            fullWidth
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          />
+          <TextField
+            label="Số điện thoại"
+            fullWidth
+            value={formData.phone}
+            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+          />
+          <TextField
+            label="Địa chỉ"
+            fullWidth
+            value={formData.address}
+            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+          />
+          <TextField
+            label="Mật khẩu"
+            type="password"
+            fullWidth
+            value={formData.password}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+          />
+          <TextField
+            label="Xác nhận mật khẩu"
+            type="password"
+            value={formData.confirmPassword}
+            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+          />
 
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 1 }}>
             {preview && <Avatar src={preview} sx={{ width: 80, height: 80, mb: 1 }} />}

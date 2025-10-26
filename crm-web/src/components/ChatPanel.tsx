@@ -1,29 +1,33 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import {
   Box,
+  Paper,
+  Avatar,
   Typography,
   TextField,
   IconButton,
   InputAdornment,
-  Avatar,
-  Badge,
-  Paper,
   CircularProgress,
+  Button,
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
-import { io, Socket } from 'socket.io-client';
+import OpenWithIcon from '@mui/icons-material/OpenWith';
 import axios from 'axios';
 import MessageBubble from './MessageBubble';
 import { getCurrentUser, getToken } from '../utils/auth';
-import { BACKEND_URL } from './../api/fetcher';
+import { BACKEND_URL } from '../api/fetcher';
+import { useSocketStore } from '../store/socketStore';
+import { useChatStore } from '../store/chatStore';
+import type { UserWithOnline } from '../types/index';
 
 interface ChatPanelProps {
   userId: string;
   role?: 'admin' | 'telesale';
   onLoaded?: () => void;
+  onClose?: (userId: string) => void;
 }
 
-interface Message {
+export interface Message {
   _id: string;
   text: string;
   username: string;
@@ -34,94 +38,154 @@ interface Message {
   isOnline?: boolean;
 }
 
-interface Telesale {
-  id: string;
-  username?: string;
-  email?: string;
-  avatar?: string | null;
-  isOnline?: boolean;
-}
-
-// **Socket global duy nhất**
-const socket: Socket = io(BACKEND_URL, { transports: ['websocket'] });
-
-export default function ChatPanel({ userId, role, onLoaded }: ChatPanelProps) {
+export default function ChatPanel({ userId, role, onLoaded, onClose }: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
-  const [assignedTelesale, setAssignedTelesale] = useState<Telesale | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
   const currentUser = getCurrentUser();
   const token = getToken();
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const { socket, initSocket, disconnectSocket } = useSocketStore();
 
-  // Fetch messages + assigned telesale
-  const fetchMessages = useCallback(async (beforeId?: string) => {
-    if (!userId) return;
-    if (!hasMore && beforeId) return; // không còn tin nhắn cũ
+  const assignedTelesale = useChatStore((state) => state.assignedTelesale[userId]);
+  const setAssignedTelesaleStore = useChatStore((state) => state.setAssignedTelesale);
 
-    setLoadingMore(true);
-    try {
-      const res = await axios.get<Message[]>(`${BACKEND_URL}/api/zalo/messages/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { role, beforeId },
-      });
+  // ----------------- Drag & Resize -----------------
+  const [position, setPosition] = useState({ top: 100, left: 100 });
+  const [size, setSize] = useState({ width: 600, height: 500 });
+  const [dragging, setDragging] = useState(false);
+  const [resizing, setResizing] = useState(false);
+  const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const resizeStartRef = useRef<{ x: number; y: number; width: number; height: number }>({
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+  });
 
-      if (res.data.length === 0) setHasMore(false);
-
-      setMessages(prev => beforeId ? [...res.data, ...prev] : res.data);
-
-      // Lấy last assigned telesale
-      if (!beforeId && res.data.length > 0) {
-        const lastAssigned = [...res.data].reverse().find(m => m.assignedTelesale);
-        if (lastAssigned && lastAssigned.assignedTelesale) {
-          await fetchAssignedTelesale(lastAssigned.assignedTelesale);
-        }
-      }
-
-      onLoaded?.();
-    } catch (err) {
-      console.error(err);
-      onLoaded?.();
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [userId, role, token, hasMore]);
-
-  // Fetch assigned telesale
-  const fetchAssignedTelesale = async (telesaleId: string) => {
-    try {
-      const res = await axios.get<Telesale>(`${BACKEND_URL}/api/users/${telesaleId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setAssignedTelesale({
-        id: res.data.id,
-        username: res.data.username || 'Unknown',
-        avatar: res.data.avatar ?? null,
-        isOnline: res.data.isOnline ?? false,
-      });
-    } catch (err) {
-      console.error(err);
-    }
+  const onDragMouseDown = (e: React.MouseEvent) => {
+    setDragging(true);
+    dragStartRef.current = { x: e.clientX - position.left, y: e.clientY - position.top };
   };
 
-  // Join socket + fetch messages lần đầu
+  const onResizeMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setResizing(true);
+    resizeStartRef.current = { x: e.clientX, y: e.clientY, width: size.width, height: size.height };
+  };
+
   useEffect(() => {
-    if (!userId) return;
+    const onMouseMove = (e: MouseEvent) => {
+      if (dragging)
+        setPosition({
+          left: e.clientX - dragStartRef.current.x,
+          top: e.clientY - dragStartRef.current.y,
+        });
+      if (resizing)
+        setSize({
+          width: Math.max(300, resizeStartRef.current.width + e.clientX - resizeStartRef.current.x),
+          height: Math.max(
+            300,
+            resizeStartRef.current.height + e.clientY - resizeStartRef.current.y
+          ),
+        });
+    };
+    const onMouseUp = () => {
+      setDragging(false);
+      setResizing(false);
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [dragging, resizing]);
+
+  // ----------------- Fetch assigned telesale -----------------
+  const fetchAssignedTelesale = useCallback(
+    async (telesaleId: string) => {
+      if (!telesaleId) return;
+      console.log('Calling fetchAssignedTelesale with ID:', telesaleId);
+      try {
+        const res = await axios.get<UserWithOnline>(`${BACKEND_URL}/api/users/${telesaleId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        // Cập nhật Zustand store
+        setAssignedTelesaleStore(userId, { ...res.data, isOnline: res.data.isOnline ?? false });
+      } catch (err) {
+        console.error('Cannot fetch assigned telesale:', err);
+      }
+    },
+    [token, userId, setAssignedTelesaleStore]
+  );
+
+  // ----------------- Fetch messages -----------------
+  const fetchMessages = useCallback(
+    async (beforeId?: string) => {
+      if (!userId || (!hasMore && beforeId)) return;
+      setLoadingMore(true);
+      try {
+        const res = await axios.get<Message[]>(`${BACKEND_URL}/api/zalo/messages/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { role, beforeId },
+        });
+
+        if (res.data.length === 0) setHasMore(false);
+        setMessages((prev) => (beforeId ? [...res.data, ...prev] : res.data));
+
+        // ----- Fetch assigned telesale ngay sau khi load messages -----
+        // Lấy message gần nhất có assignedTelesale
+        const lastAssigned = [...res.data].reverse().find((m) => m.assignedTelesale);
+        console.log('Last message with assignedTelesale:', lastAssigned);
+        if (lastAssigned?.assignedTelesale) {
+          console.log('Calling fetchAssignedTelesale with ID:', lastAssigned.assignedTelesale);
+          fetchAssignedTelesale(lastAssigned.assignedTelesale);
+        }
+
+        onLoaded?.();
+      } catch (err) {
+        console.error(err);
+        onLoaded?.();
+      } finally {
+        setLoadingMore(false);
+      }
+    },
+    [userId, role, token, hasMore, onLoaded, fetchAssignedTelesale]
+  );
+
+  // ----------------- Effect re-fetch nếu messages update -----------------
+  useEffect(() => {
+    if (!assignedTelesale && messages.length > 0) {
+      const lastAssigned = [...messages].reverse().find((m) => m.assignedTelesale);
+      if (lastAssigned?.assignedTelesale) {
+        fetchAssignedTelesale(lastAssigned.assignedTelesale);
+      }
+    }
+  }, [messages, assignedTelesale, fetchAssignedTelesale]);
+
+  // ----------------- Socket -----------------
+  useEffect(() => {
+    initSocket();
+    return () => disconnectSocket();
+  }, [initSocket, disconnectSocket]);
+
+  useEffect(() => {
+    if (!socket || !userId) return;
     socket.emit('join', currentUser.id);
     fetchMessages();
-  }, [userId, fetchMessages]);
+  }, [socket, userId, currentUser.id, fetchMessages]);
 
-  // Lắng nghe tin nhắn realtime
   useEffect(() => {
+    if (!socket) return;
+
     const handleNewMessage = (msg: Message) => {
-      if (msg.userId === userId || msg.senderType !== 'customer') {
-        setMessages(prev => [...prev, msg]);
-        // Scroll xuống cuối khi có tin nhắn mới
-        setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
-      }
+      setMessages((prev) => [...prev, msg]);
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+
+      if (msg.assignedTelesale) fetchAssignedTelesale(msg.assignedTelesale);
     };
 
     socket.on('new_message', handleNewMessage);
@@ -129,9 +193,9 @@ export default function ChatPanel({ userId, role, onLoaded }: ChatPanelProps) {
     return () => {
       socket.off('new_message', handleNewMessage);
     };
-  }, [userId]);
+  }, [socket, fetchAssignedTelesale]);
 
-  // Gửi tin nhắn
+  // ----------------- Send message -----------------
   const sendMessage = async () => {
     if (!text.trim()) return;
     try {
@@ -139,47 +203,118 @@ export default function ChatPanel({ userId, role, onLoaded }: ChatPanelProps) {
       const res = await axios.post<{ saved: Message }>(`${BACKEND_URL}/api/zalo/send`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const savedMessage: Message = { ...res.data.saved, username: currentUser.username, avatar: currentUser.avatar, senderType: role === 'admin' ? 'admin' : 'telesale' };
-      setMessages(prev => [...prev, savedMessage]);
+      const savedMessage: Message = {
+        ...res.data.saved,
+        username: currentUser.username,
+        avatar: currentUser.avatar,
+        senderType: role === 'admin' ? 'admin' : 'telesale',
+      };
+      setMessages((prev) => [...prev, savedMessage]);
       setText('');
-      socket.emit('new_message', savedMessage);
+      socket?.emit('new_message', savedMessage);
     } catch (err) {
       console.error(err);
     }
   };
 
-  // Scroll event để load thêm tin nhắn cũ
   const handleScroll = async (e: React.UIEvent<HTMLDivElement>) => {
-    const top = e.currentTarget.scrollTop;
-    if (top === 0 && messages.length > 0 && hasMore && !loadingMore) {
-      const oldestId = messages[0]._id;
-      await fetchMessages(oldestId);
+    if (e.currentTarget.scrollTop === 0 && messages.length > 0 && hasMore && !loadingMore) {
+      await fetchMessages(messages[0]._id);
     }
   };
 
+  // ----------------- Render -----------------
   return (
-    <Paper elevation={5} sx={{ marginTop: '13vh', height: '80vh', width: '90vw', borderRadius: 3, display: 'flex', flexDirection: 'column', background: 'linear-gradient(to bottom, #f0f8ff, #d0e8ff)' }}>
+    <Paper
+      elevation={6}
+      sx={{
+        position: 'absolute',
+        top: position.top,
+        left: position.left,
+        width: size.width,
+        height: size.height,
+        display: 'flex',
+        flexDirection: 'column',
+        borderRadius: 2,
+        overflow: 'hidden',
+        cursor: dragging ? 'grabbing' : 'grab',
+        userSelect: dragging ? 'none' : 'auto',
+        zIndex: 100,
+      }}
+    >
       {/* Header */}
-      <Box p={1} display="flex" alignItems="center" borderRadius={2} sx={{ background: 'linear-gradient(135deg, #ff9a9e 0%, #fad0c4 50%, #fad0c4 100%)', boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }}>
-        <Badge variant="dot" color="success" overlap="circular" invisible={!assignedTelesale?.isOnline} anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
-          <Avatar src={assignedTelesale?.avatar ?? undefined} alt={assignedTelesale?.username} />
-        </Badge>
-        <Typography ml={2} fontWeight="bold" color="#fff">{assignedTelesale?.username || 'Loading...'}</Typography>
+      <Box
+        onMouseDown={onDragMouseDown}
+        sx={{
+          p: 1,
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          background: 'linear-gradient(135deg, #4e9af1 0%, #b349c3 50%, #1e3fcc 100%)',
+          color: 'white',
+          cursor: 'grab',
+        }}
+      >
+        <Box display="flex" flexDirection="column" flex={1} minWidth={0}>
+          <Box display="flex" alignItems="center" gap={1} minWidth={0}>
+            <Avatar src={messages[0]?.avatar ?? ''} sx={{ width: 32, height: 32, flexShrink: 0 }} />
+            <Typography
+              noWrap
+              fontWeight="bold"
+              sx={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}
+            >
+              {messages[0]?.username ?? 'Khách hàng'}
+            </Typography>
+          </Box>
+          <Typography variant="caption" sx={{ mt: 0.5, color: 'rgba(255,255,255,0.8)' }}>
+            Đang được chăm sóc bởi: {assignedTelesale?.username ?? 'Đang tải...'}
+          </Typography>
+        </Box>
+        <Box display="flex" alignItems="center" gap={0.5} sx={{ mx: 3 }}>
+          <IconButton size="small" sx={{ color: 'white' }}>
+            📞
+          </IconButton>
+          <IconButton size="small" sx={{ color: 'white' }}>
+            🏷️
+          </IconButton>
+          <Button
+            size="small"
+            onClick={() => onClose?.(userId)}
+            sx={{
+              position: 'absolute',
+              top: -1,
+              right: -1,
+              width: 26,
+              height: 26,
+              minWidth: 'auto',
+              padding: 0,
+              color: '#eee8e8',
+              '&:hover': { color: '#686262' },
+            }}
+          >
+            X
+          </Button>
+        </Box>
       </Box>
 
-      {/* Chat messages scrollable */}
+      {/* Messages */}
       <Box
         flex={1}
         p={1}
-        sx={{ overflowY: 'auto', display: 'flex', flexDirection: 'column' }}
-        ref={scrollContainerRef}
+        sx={{
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'linear-gradient(to bottom, #e0eafc, #cfdef3)',
+        }}
         onScroll={handleScroll}
       >
         {loadingMore && <CircularProgress size={24} sx={{ alignSelf: 'center', mb: 1 }} />}
         {messages.length === 0 ? (
           <Typography color="text.secondary">Chưa có tin nhắn nào...</Typography>
         ) : (
-          messages.map(msg => {
+          messages.map((msg) => {
             const fromAdminOrTelesale = msg.senderType === 'admin' || msg.senderType === 'telesale';
             const isCustomer = !fromAdminOrTelesale;
             return (
@@ -199,8 +334,8 @@ export default function ChatPanel({ userId, role, onLoaded }: ChatPanelProps) {
         <div ref={messagesEndRef} />
       </Box>
 
-      {/* Form gửi tin nhắn */}
-      <Box display="flex" alignItems="center" p={1} mt={1} bgcolor="#f0f0f0" borderRadius={3} gap={1}>
+      {/* Input */}
+      <Box display="flex" p={1} bgcolor="#f0f0f0" gap={1}>
         <TextField
           fullWidth
           placeholder="Nhập tin nhắn..."
@@ -208,8 +343,12 @@ export default function ChatPanel({ userId, role, onLoaded }: ChatPanelProps) {
           onChange={(e) => setText(e.target.value)}
           variant="outlined"
           size="small"
-          sx={{ bgcolor: 'white', borderRadius: 3, '& .MuiOutlinedInput-root': { borderRadius: 3 } }}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              sendMessage();
+            }
+          }}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
@@ -220,6 +359,22 @@ export default function ChatPanel({ userId, role, onLoaded }: ChatPanelProps) {
             ),
           }}
         />
+      </Box>
+
+      {/* Resize Handle */}
+      <Box
+        onMouseDown={onResizeMouseDown}
+        sx={{
+          position: 'absolute',
+          bottom: 0,
+          right: 0,
+          width: 24,
+          height: 24,
+          cursor: 'se-resize',
+          bgcolor: 'rgba(0,0,0,0.2)',
+        }}
+      >
+        <OpenWithIcon sx={{ fontSize: 20, color: '#999', pointerEvents: 'none' }} />
       </Box>
     </Paper>
   );

@@ -28,6 +28,7 @@ import AutoModeIcon from '@mui/icons-material/AutoMode';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import KeyboardDoubleArrowLeftIcon from '@mui/icons-material/KeyboardDoubleArrowLeft';
 import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight';
+import DehazeIcon from '@mui/icons-material/Dehaze';
 import { keyframes } from '@mui/system';
 import type { Conversation } from './../../types';
 import { fetchConversations } from './../../api/adminApi';
@@ -229,7 +230,8 @@ export default function Sidebar({
   const handleSelectUser = async (c: ConversationWithAssign) => {
     setActiveUser(c.userId);
     onSelectUser(c.userId);
-
+    // Nếu đang ở mobile, đóng sidebar
+    if (isMobile) setMobileOpen(false);
     // 👇 Gọi API backend để set read=true
     const token = getToken();
     await fetch(`${BASE_URL}/messages/${c.userId}/read`, {
@@ -624,10 +626,10 @@ export default function Sidebar({
                                   );
                                 }}
                               >
-                                Assign
+                                Phân công
                               </MenuItem>
-                              <MenuItem onClick={(e) => e.stopPropagation()}>Delete</MenuItem>
-                              <MenuItem onClick={(e) => e.stopPropagation()}>Mark as read</MenuItem>
+                              <MenuItem onClick={(e) => e.stopPropagation()}>Xóa</MenuItem>
+                              <MenuItem onClick={(e) => e.stopPropagation()}>Gắn nhãn</MenuItem>
                             </Paper>
                           )}
 
@@ -678,11 +680,15 @@ export default function Sidebar({
           )}
 
           {/* Dialog confirm */}
-          <Dialog open={isConfirmOpen} onClose={() => setIsConfirmOpen(false)}>
-            <DialogTitle>Xác nhận Assign</DialogTitle>
+          <Dialog
+            open={isConfirmOpen}
+            onClose={() => setIsConfirmOpen(false)}
+            sx={{ zIndex: 2600 }}
+          >
+            <DialogTitle>Xác nhận phân công</DialogTitle>
             <DialogContent>
               <Typography>
-                Bạn có chắc muốn assign <strong>{selectedTelesale?.username}</strong> cho{' '}
+                Bạn có chắc muốn phân công cho <strong>{selectedTelesale?.username}</strong> cho{' '}
                 <strong>{selectedConversation?.name}</strong>?
               </Typography>
             </DialogContent>
@@ -703,7 +709,7 @@ export default function Sidebar({
                     );
                     setToast({
                       open: true,
-                      message: `✅ Assigned ${selectedTelesale.username} to ${displayName}`,
+                      message: `✅ Đã phân công ${selectedTelesale.username} cho ${displayName}`,
                     });
                   } catch (err) {
                     console.error(err);
@@ -725,7 +731,7 @@ export default function Sidebar({
             onClose={() => setToast((prev) => ({ ...prev, open: false }))}
             anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
             message={toast.message}
-            sx={{ marginTop: 9 }}
+            sx={{ marginTop: 9, zIndex: 3000 }}
           />
         </Box>
       )}
@@ -742,15 +748,15 @@ export default function Sidebar({
             }}
             sx={{
               position: 'fixed',
-              top: 26,
-              left: 36,
+              top: '0.2vh',
+              left: '90vw',
               zIndex: 2100,
               bgcolor: '#448f2bff',
               color: 'white',
               '&:hover': { bgcolor: '#1a237e' },
             }}
           >
-            <KeyboardDoubleArrowRightIcon />
+            <DehazeIcon />
           </IconButton>
           {/* Mobile sidebar dialog */}
           <Dialog
@@ -762,10 +768,10 @@ export default function Sidebar({
                 bgcolor: '#4159c7',
                 color: 'white',
                 width: '90vw', // responsive width
-                maxWidth: 400, // giới hạn max width
+                maxWidth: 460, // giới hạn max width
                 position: 'absolute',
-                top: mobileOpen ? '8vh' : '0', // top thay đổi khi mở/đóng
-                left: mobileOpen ? '2vw' : '-100vw', // đẩy Dialog ra ngoài màn hình khi đóng
+                top: mobileOpen ? '4vh' : '0', // top thay đổi khi mở/đóng
+                left: mobileOpen ? '1vw' : '-100vw', // đẩy Dialog ra ngoài màn hình khi đóng
                 borderRadius: 2,
                 boxShadow: 6,
                 transition: 'left 0.3s ease, top 0.3s ease', // animation mượt
@@ -845,7 +851,16 @@ export default function Sidebar({
 
             {/* Conversations */}
             {mobileOpen && activeSection === 'chat' && (
-              <Box sx={{ flex: 1, overflowY: 'auto', mt: 0.5 }} onScroll={handleScroll}>
+              <Box
+                sx={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  mt: 0.5,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+                onScroll={handleScroll}
+              >
                 {loading &&
                   page === 1 &&
                   Array.from(new Array(6)).map((_, idx) => (
@@ -1036,12 +1051,10 @@ export default function Sidebar({
                                     );
                                   }}
                                 >
-                                  Assign
+                                  Phân công
                                 </MenuItem>
-                                <MenuItem onClick={(e) => e.stopPropagation()}>Delete</MenuItem>
-                                <MenuItem onClick={(e) => e.stopPropagation()}>
-                                  Mark as read
-                                </MenuItem>
+                                <MenuItem onClick={(e) => e.stopPropagation()}>Xóa</MenuItem>
+                                <MenuItem onClick={(e) => e.stopPropagation()}>Gắn nhãn</MenuItem>
                               </Paper>
                             )}
 
@@ -1090,6 +1103,60 @@ export default function Sidebar({
                 ))}
               </Box>
             )}
+            {/* Dialog confirm */}
+            <Dialog
+              open={isConfirmOpen}
+              onClose={() => setIsConfirmOpen(false)}
+              sx={{ zIndex: 2600 }}
+            >
+              <DialogTitle>Xác nhận phân công</DialogTitle>
+              <DialogContent>
+                <Typography>
+                  Bạn có chắc muốn phân công cho <strong>{selectedTelesale?.username}</strong> cho{' '}
+                  <strong>{selectedConversation?.name}</strong>?
+                </Typography>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setIsConfirmOpen(false)}>Hủy</Button>
+                <Button
+                  variant="contained"
+                  onClick={async () => {
+                    if (!selectedConversation || !selectedTelesale) return;
+                    try {
+                      await assignTelesale(selectedConversation.userId, selectedTelesale._id);
+                      setConversations((prev) =>
+                        prev.map((conv) =>
+                          conv.userId === selectedConversation.userId
+                            ? { ...conv, isAssignMenuOpen: false }
+                            : conv
+                        )
+                      );
+                      setToast({
+                        open: true,
+                        message: `✅ Đã phân công ${selectedTelesale.username} cho ${displayName}`,
+                      });
+                    } catch (err) {
+                      console.error(err);
+                      setToast({ open: true, message: '❌ Assign failed' });
+                    } finally {
+                      setIsConfirmOpen(false);
+                    }
+                  }}
+                >
+                  Xác nhận
+                </Button>
+              </DialogActions>
+            </Dialog>
+
+            {/* Snackbar */}
+            <Snackbar
+              open={toast.open}
+              autoHideDuration={3000}
+              onClose={() => setToast((prev) => ({ ...prev, open: false }))}
+              anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+              message={toast.message}
+              sx={{ marginTop: 9, zIndex: 3000 }}
+            />
           </Dialog>
         </>
       )}
