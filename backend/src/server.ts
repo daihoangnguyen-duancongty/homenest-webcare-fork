@@ -1,106 +1,50 @@
+// server.ts
 import dotenv from 'dotenv';
 dotenv.config();
 
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 import http from 'http';
 import { Server } from 'socket.io';
 
-// Import các connection riêng
-import { productDB, userDB, zaloMessageDB } from './database/connection';
-
-// Import routes
-import productRoutes from './routes/productRoutes';
 import authRoutes from './routes/authRoutes';
-import cartRoutes from './routes/cartRoutes';
-import zaloRoutes from './routes/zaloRoutes';
+// ...import các routes khác nếu cần
 
-// Import models sử dụng đúng connection
-import UserModel from './models/User';
+// -------------------- Tạo thư mục uploads --------------------
+const uploadDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+  console.log('📁 uploads directory created');
+}
 
 // -------------------- Khởi tạo Express app --------------------
 const app = express();
 const PORT: number = parseInt(process.env.PORT || '5000', 10);
-
-// Serve thư mục public cho Zalo verification
-app.use(express.static(path.join(__dirname, '../public')));
-
-// Phục vụ file zalodomainverify.txt
-app.get('/zalodomainverify.txt', (req: Request, res: Response) => {
-  const filePath = path.join(__dirname, '../public/zalodomainverify.txt');
-  console.log('Serving file from:', filePath);
-  res.sendFile(filePath);
-});
 
 // -------------------- Middleware --------------------
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// -------------------- Static Files --------------------
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Serve file tĩnh từ uploads
+app.use('/uploads', express.static(uploadDir));
 
 // -------------------- API Routes --------------------
-app.use('/api/products', productRoutes);
 app.use('/api/users', authRoutes);
-app.use('/api/users', cartRoutes);
-app.use('/api/zalo', zaloRoutes);
+// ... các route khác
 
 // -------------------- Socket.IO Setup --------------------
 const server = http.createServer(app);
-
-const io = new Server(server, {
-  cors: {
-    origin: '*',
-  },
-});
+const io = new Server(server, { cors: { origin: '*' } });
 
 io.on('connection', (socket) => {
   console.log('🔌 Client connected:', socket.id);
-
-  socket.on('join', (userId: string) => {
-    socket.join(userId);
-    console.log(`👥 ${socket.id} joined room ${userId}`);
-  });
-
-  socket.on('disconnect', () => {
-    console.log('❌ Client disconnected:', socket.id);
-  });
-});
-
-// ✅ Export io để các file khác emit real-time
-export { io };
-
-// -------------------- Test Routes --------------------
-app.get('/api/test-db', async (_req, res) => {
-  try {
-    // Sử dụng connection userDB
-    const users = await UserModel.find().exec();
-    res.json({ success: true, count: users.length });
-  } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-app.get('/api/health', (_req: Request, res: Response) => {
-  res.json({ status: 'OK', message: 'Server is running smoothly' });
-});
-
-app.get('/', (_req: Request, res: Response) => {
-  res.send('🚀 Backend đang hoạt động tốt!!');
+  socket.on('disconnect', () => console.log('❌ Client disconnected:', socket.id));
 });
 
 // -------------------- Start Server --------------------
 server.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
 });
-
-// -------------------- MongoDB Connection Logs --------------------
-productDB.once('open', () => console.log('✅ productDB connected!'));
-userDB.once('open', () => console.log('✅ userDB connected!'));
-zaloMessageDB.once('open', () => console.log('✅ zaloMessageDB connected!'));
-
-productDB.on('error', (err) => console.error('❌ productDB error:', err));
-userDB.on('error', (err) => console.error('❌ userDB error:', err));
-zaloMessageDB.on('error', (err) => console.error('❌ zaloMessageDB error:', err));

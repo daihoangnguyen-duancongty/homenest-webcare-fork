@@ -1,56 +1,23 @@
 import { Router } from 'express';
-import { register, login } from '../controllers/authController';
-import { authenticateToken } from '../middleware/authenticateJWT';
-import { authorizeAdmin, authorizeTelesale, authorizeRoles } from '../middleware/authorizeRole';
 import multer from 'multer';
+import { register, login } from '../controllers/authController';
+import path from 'path';
 
 const router = Router();
 
-// Cấu hình multer để xử lý file tải lên avatar
+// -------------------- Cấu hình Multer --------------------
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/');
+    cb(null, path.join(__dirname, '../uploads')); // lưu vào thư mục uploads
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname);
+    cb(null, Date.now() + '-' + file.originalname); // tránh trùng tên
   },
 });
 const upload = multer({ storage });
 
-// Đăng ký người dùng mới (admin hoặc telesale)
+// -------------------- Routes --------------------
 router.post('/register', upload.single('avatar'), register);
-
-// Đăng nhập và trả về token + role
 router.post('/login', login);
-
-// Dashboard admin (chỉ admin mới truy cập được)
-router.get(
-  '/admin-dashboard',
-  authenticateToken,
-  authorizeAdmin,
-  (req, res) => {
-    res.json({ message: 'Chào mừng bạn đến với trang quản trị' });
-  }
-);
-
-// Dashboard telesale (chỉ telesale mới truy cập được)
-router.get(
-  '/telesale-dashboard',
-  authenticateToken,
-  authorizeTelesale,
-  (req, res) => {
-    res.json({ message: 'Chào mừng bạn đến với trang telesale' });
-  }
-);
-
-// Dashboard cho cả admin + telesale (nếu cần)
-router.get(
-  '/dashboard',
-  authenticateToken,
-  authorizeRoles(['admin', 'telesale']),
-  (req, res) => {
-    res.json({ message: 'Chào mừng bạn đến với dashboard CRM' });
-  }
-);
 
 export default router;
