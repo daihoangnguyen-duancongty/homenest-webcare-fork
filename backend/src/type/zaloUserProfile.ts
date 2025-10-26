@@ -5,6 +5,5 @@ export interface ZaloUserProfile {
     avatar: string;
     gender?: number;
     birthday?: string;
-    message?: string; 
   }
   

@@ -1,20 +1,19 @@
-import { Schema, Document } from 'mongoose';
-import { zaloMessageDB } from '../database/connection';
+import { Schema, model, Document } from 'mongoose';
 import GuestUser, { IGuestUser } from './ZaloGuestUser';
+import { zaloMessageDB } from '../database/connection';
 
 export interface IZaloMessage extends Document {
-  userId: string | IGuestUser; // liên kết tới GuestUser
+  userId: string | IGuestUser;
   text: string;
   username?: string;
   avatar?: string | null;
-  senderType?: 'admin' | 'customer' | 'telesale';
+  senderType?: 'admin' | 'customer'; // thêm
   success: boolean;
   response: any;
   assignedTelesale?: string;
   sentAt?: Date;
   createdAt?: Date;
   updatedAt?: Date;
-  read?: boolean;
 }
 
 const ZaloMessageSchema = new Schema<IZaloMessage>(
@@ -26,9 +25,6 @@ const ZaloMessageSchema = new Schema<IZaloMessage>(
     response: { type: Schema.Types.Mixed },
     username: { type: String },
     avatar: { type: String },
-    assignedTelesale: { type: String, default: null },
-    senderType: { type: String, enum: ['admin', 'telesale', 'customer'], default: 'customer' },
-    read: { type: Boolean, default: false },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );

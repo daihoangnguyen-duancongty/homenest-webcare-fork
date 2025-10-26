@@ -7,7 +7,10 @@ for (const key in process.env) {
     process.env[key] = value.trim();
   }
 }
-
+console.log('ZALO_REFRESH_TOKEN=', process.env.ZALO_REFRESH_TOKEN);
+console.log('ZALO_REFRESH_TOKEN trimmed:', process.env.ZALO_REFRESH_TOKEN?.trim());
+console.log('MONGO_URI:', `"${process.env.MONGO_URI}"`);
+console.log('ZALO_REFRESH_TOKEN:', `"${process.env.ZALO_REFRESH_TOKEN}"`);
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -25,21 +28,11 @@ import zaloRoutes from './routes/zaloRoutes';
 
 // Import models sử dụng đúng connection
 import UserModel from './models/User';
-// Import routes Zalo V4 User Access Token
-import session from 'express-session';
-import zaloUserRoutes from './routes/zaloUserRoutes';
+
 // -------------------- Khởi tạo Express app --------------------
 const app = express();
 const PORT: number = parseInt(process.env.PORT || '5000', 10);
-// ✅ Đảm bảo thư mục uploads tồn tại (Render sẽ không tự tạo)
-import fs from 'fs';
 
-
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-  console.log('📁 Created uploads directory:', uploadDir);
-}
 // Serve thư mục public cho Zalo verification
 app.use(express.static(path.join(__dirname, '../public')));
 
@@ -50,29 +43,13 @@ app.get('/zalodomainverify.txt', (req: Request, res: Response) => {
   res.sendFile(filePath);
 });
 
-
-
-// -------------------- Middleware chung--------------------
+// -------------------- Middleware --------------------
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-//---------------------Session Middleware for routes Zalo V4 User Access Token------------
-
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'keyboard-cat',
-  resave: false,
-  saveUninitialized: true,
-  cookie: { secure: false },
-}));
-
-// -------------------- Routes sử dụng session----------------------------------------------------------------------------------------------
-
-// Zalo V4 OAuth router
-app.use('/api/zalo-user', zaloUserRoutes);
 
 // -------------------- Static Files --------------------
-app.use('/uploads', express.static(uploadDir));
-
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // -------------------- API Routes --------------------
 app.use('/api/products', productRoutes);

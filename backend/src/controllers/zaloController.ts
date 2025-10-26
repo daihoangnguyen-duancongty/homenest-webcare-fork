@@ -1,16 +1,10 @@
 import { Request, Response } from 'express';
-import { getAccessToken, sendMessage, fetchZaloUserDetail } from '../services/zaloService';
+import { getAccessToken, sendMessage, fetchZaloUserProfile } from '../services/zaloService';
 import GuestUser from '../models/ZaloGuestUser';
 import ZaloMessageModel from '../models/ZaloMessage';
 import { io } from '../server';
 import { RequestHandler } from 'express';
-import UserModel from '../models/User';
 import { createMockUser } from '../utils/mockUser';
-
-interface UserProfile {
-  name: string;
-  avatar: string | null;
-}
 
 // Kiểm tra Access token đã có
 (async () => {
@@ -48,7 +42,6 @@ export const getTokenController = async (req: Request, res: Response) => {
 };
 
 // Gửi tin nhắn
-
 export const sendMessageController: RequestHandler = async (req, res) => {
   try {
     const { userId, text } = req.body;
@@ -57,135 +50,82 @@ export const sendMessageController: RequestHandler = async (req, res) => {
       return;
     }
 
-    const sender = (req as any).user;
-    if (!sender?.id) {
-      res.status(401).json({ error: 'Không xác định được người gửi' });
-      return;
-    }
-
-    // ✅ Lấy thông tin thật từ UserModel (admin / telesale)
-    const senderUser = await UserModel.findById(sender.id).lean();
-    if (!senderUser) {
-      res.status(404).json({ error: 'Không tìm thấy user trong hệ thống' });
-      return;
-    }
-
-    const senderUsername = senderUser.username;
-    const senderAvatar =
-      senderUser.avatar?.path ||
-      `https://ui-avatars.com/api/?name=${encodeURIComponent(senderUsername)}&background=random`;
-    const senderRole = senderUser.role;
-
-    // Upsert guest mock nếu chưa có
     const guestData = createMockUser(userId);
-    await GuestUser.findOneAndUpdate(
+    const guest = await GuestUser.findOneAndUpdate(
       { _id: userId },
       { $setOnInsert: guestData },
       { upsert: true, new: true }
     );
 
-    // ✅ Gửi tin nhắn tới OA
     const result = await sendMessage(userId, text);
 
-    // ✅ Lưu tin nhắn
     const saved = await ZaloMessageModel.create({
       userId,
       text,
-      senderType: senderRole,
-      username: senderUsername,
-      avatar: senderAvatar,
       success: result?.error === 0,
       response: result,
-      sentAt: new Date(),
-      read: true,
+      username: guest.username,
+      avatar: guest.avatar,
     });
 
-    // ✅ Emit realtime cho frontend
     io.to(userId).emit('new_message', saved);
-
-    console.log(`📤 ${senderRole} ${senderUsername} gửi tin nhắn tới userId=${userId}`);
-
-    res.status(200).json({ success: true, message: saved });
+    res.status(200).json({ success: true, result, saved });
   } catch (err: any) {
-    console.error('❌ sendMessageController error:', err);
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };
 
 // Webhook nhận tin nhắn
-export const zaloWebhookController: RequestHandler = async (req, res) => {
+export const zaloWebhookController = async (req: Request, res: Response) => {
   try {
     let payload: any = req.body;
     if (typeof payload === 'string') payload = JSON.parse(payload);
 
-    res.status(200).send('OK'); // trả 200 ngay
+    const sender = payload?.sender ?? payload?.user;
+    const senderId = sender?.id;
+    const text = payload?.message?.text ?? '[no text]';
 
-    const senderId = payload?.sender?.id ?? payload?.user?.id;
-    if (!senderId) return;
+    if (!senderId) {
+      return res.status(200).json({ success: false, reason: 'Missing sender.id' });
+    }
 
-    // Upsert guest mock nếu chưa có
-    const guestData = createMockUser(senderId);
+    // Upsert GuestUser mock
     const guest = await GuestUser.findOneAndUpdate(
       { _id: senderId },
-      { $setOnInsert: guestData },
+      {
+        $setOnInsert: {
+          username: `ZaloUser-${senderId}`,
+          email: `${senderId}@zalo.local`,
+          avatar: null,
+        },
+      },
       { upsert: true, new: true }
     );
 
-    // Fetch profile thật từ Zalo
-    let profile: UserProfile = { name: guest.username, avatar: guest.avatar ?? null };
-    try {
-      const p = await fetchZaloUserDetail(senderId);
-      if (p) {
-        profile = { name: p.name, avatar: p.avatar ?? null };
+    // Fetch profile thật từ OA nếu có refresh token
+    let profile = await fetchZaloUserProfile(senderId);
 
-        // **Upsert username + avatar vào GuestUser luôn**
-        await GuestUser.findOneAndUpdate(
-          { _id: senderId },
-          { $set: { username: profile.name, avatar: profile.avatar } },
-          { upsert: true }
-        );
-      }
-    } catch (err) {
-      console.warn('⚠️ Fetch profile OA failed, fallback mock:', err);
-    }
+    // Lưu tin nhắn, ưu tiên: Postman payload > profile OA > guest mock
+    const saved = await ZaloMessageModel.create({
+      userId: senderId,
+      text,
+      username: sender?.name ?? profile?.name ?? guest.username,
+      avatar: sender?.avatar ?? profile?.avatar ?? guest.avatar,
+      success: true,
+      response: payload,
+    });
 
-    // Nếu payload có mảng data (Postman), lưu từng tin nhắn
-    const messages: Array<{
-      message?: string;
-      time?: number;
-      from_display_name?: string;
-      from_avatar?: string;
-    }> = payload?.data ?? [{ message: payload?.message?.text ?? '[no text]', time: Date.now() }];
+    console.log(`💬 Saved message from userId=${senderId}, username=${saved.username}`);
 
-    for (const msg of messages) {
-      const text = msg.message ?? '[no text]';
-      const sentAt = msg.time ? new Date(msg.time) : new Date();
+    // Emit realtime cho admin (CRM users)
+    const admins = await GuestUser.find({ role: 'admin' }); // hoặc UserModel nếu muốn admin thật
+    admins.forEach((a) => io.to((a._id as any).toString()).emit('new_message', saved));
 
-      // **Lưu message với username thật từ profile**
-      const saved = await ZaloMessageModel.create({
-        userId: senderId,
-        text,
-        username: profile.name,
-        avatar: profile.avatar,
-        senderType: 'customer',
-        success: true,
-        response: msg,
-        sentAt,
-        read: false,
-      });
-
-      // Emit realtime cho admin
-      const admins = await GuestUser.find({ role: 'admin' });
-      admins.forEach((a) =>
-        io.to((a._id as any).toString()).emit('new_message', {
-          ...saved.toObject(),
-          isOnline: true,
-        })
-      );
-    }
-
-    console.log(`💬 Saved ${messages.length} message(s) from userId=${senderId}`);
-  } catch (err) {
-    console.error('❌ Zalo webhook POST unexpected error:', err);
+    // Trả về 200 OK ngay
+    res.status(200).json({ success: true });
+  } catch (err: any) {
+    console.error('❌ Zalo webhook POST error:', err);
+    res.status(500).json({ success: false, error: err.message });
   }
 };
