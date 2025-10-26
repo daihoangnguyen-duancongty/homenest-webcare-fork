@@ -43,8 +43,22 @@ app.get('/zalodomainverify.txt', (req: Request, res: Response) => {
   res.sendFile(filePath);
 });
 
+// -------------------- ✅ FIX CORS --------------------
+app.use(
+  cors({
+    origin: [
+      'http://localhost:5173', // local dev
+      'https://homenest-webcare.vercel.app', // nếu frontend deploy Vercel
+      'https://homenest-webcare.netlify.app', // nếu dùng Netlify (thêm nếu có)
+    ],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+  })
+);
+
 // -------------------- Middleware --------------------
-app.use(cors());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
