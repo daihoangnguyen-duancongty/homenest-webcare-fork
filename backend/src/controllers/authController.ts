@@ -46,12 +46,10 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     await newUser.save();
 
-    res
-      .status(201)
-      .json({
-        message: 'Đăng ký thành công.',
-        user: { id: newUser._id, username: newUser.username, role: newUser.role },
-      });
+    res.status(201).json({
+      message: 'Đăng ký thành công.',
+      user: { id: newUser._id, username: newUser.username, role: newUser.role },
+    });
   } catch (err) {
     console.error('Register Error:', err);
     res.status(500).json({ message: 'Lỗi server khi đăng ký.' });
@@ -96,6 +94,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         role: user.role,
       },
     });
+    console.log('Stored hash:', user.password);
+    console.log('Plain input:', password);
   } catch (err) {
     console.error('Login Error:', err);
     res.status(500).json({ message: 'Lỗi server khi đăng nhập.' });
