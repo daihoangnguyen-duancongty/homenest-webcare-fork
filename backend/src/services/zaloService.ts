@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getZaloConfig } from '../config/zalo';
+import { ZALO_CONFIG } from '../config/zalo';
 import UserModel from '../models/User';
 import { ZaloUserProfile } from '../type/zaloUserProfile';
 
@@ -13,13 +13,10 @@ export async function getAccessToken(): Promise<string> {
   const now = Date.now();
   if (cachedAccessToken && now < tokenExpiry) return cachedAccessToken;
 
-  // Lấy config từ function, đảm bảo dotenv đã load
-  const { APP_ID, APP_SECRET, REFRESH_TOKEN } = getZaloConfig();
-
   const res = await axios.post('https://oauth.zaloapp.com/v4/oa/access_token', {
-    app_id: APP_ID,
-    app_secret: APP_SECRET,
-    refresh_token: REFRESH_TOKEN,
+    app_id: ZALO_CONFIG.APP_ID,
+    app_secret: ZALO_CONFIG.APP_SECRET,
+    refresh_token: ZALO_CONFIG.REFRESH_TOKEN,
     grant_type: 'refresh_token',
   });
 
@@ -61,9 +58,12 @@ export async function sendMessage(userId: string, text: string) {
 export async function fetchZaloUserProfile(userId: string): Promise<ZaloUserProfile | null> {
   try {
     const token = await getAccessToken();
-    const res = await axios.get(`https://openapi.zalo.me/v2.0/oa/getprofile?user_id=${userId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const res = await axios.get(
+      `https://openapi.zalo.me/v2.0/oa/getprofile?user_id=${userId}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
 
     const profile = res.data as ZaloUserProfile;
 

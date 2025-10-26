@@ -1,9 +1,12 @@
-import { Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
-import User from '../models/User';
-import bcrypt from 'bcryptjs';
+import { Request, Response } from "express";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import User from "../models/User";
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable is not defined.");
+}
 
 // ------------------ Hàm đăng ký ------------------
 export const register = async (req: Request, res: Response): Promise<void> => {
@@ -13,48 +16,49 @@ export const register = async (req: Request, res: Response): Promise<void> => {
   const username = req.body.username?.trim();
   const phone = req.body.phone?.trim();
   const address = req.body.address?.trim();
-  const role = req.body.role?.trim() as 'admin' | 'telesale' | undefined;
-  const avatar = req.file;
+  const role = req.body.role?.trim() as "admin" | "telesale" | undefined;
+  const avatar = req.file; // Nhận file ảnh từ request gửi lên
+
+  console.log("Đã nhận request đăng ký:", req.body);
 
   if (!email || !password || !confirmPassword || !username || !phone || !address) {
-    res.status(400).json({ message: 'Thiếu thông tin đăng ký.' });
+    res.status(400).json({ message: "Thiếu thông tin đăng ký." });
     return;
   }
+
   if (password !== confirmPassword) {
-    res.status(400).json({ message: 'Mật khẩu xác nhận không khớp.' });
+    res.status(400).json({ message: "Mật khẩu xác nhận không khớp." });
     return;
   }
 
   try {
     const existing = await User.findOne({ email });
     if (existing) {
-      res.status(400).json({ message: 'Email đã tồn tại.' });
+      res.status(400).json({ message: "Email đã tồn tại." });
       return;
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const newUser = new User({
       email,
-      password, // Mongoose pre('save') sẽ hash tự động
+      password: hashedPassword,
       username,
       phone,
       address,
       avatar: avatar
         ? { path: avatar.path, filename: avatar.filename, originalname: avatar.originalname }
-        : undefined,
-      role: role || 'telesale',
+        : undefined, // optional
+      role: role || "telesale", // default telesale
     });
 
     await newUser.save();
+    console.log(`✅ Tạo user mới: ${username} với role: ${newUser.role}`);
 
-    res
-      .status(201)
-      .json({
-        message: 'Đăng ký thành công.',
-        user: { id: newUser._id, username: newUser.username, role: newUser.role },
-      });
+    res.status(201).json({ message: "Đăng ký thành công.", user: { id: newUser._id, username: newUser.username, role: newUser.role } });
   } catch (err) {
-    console.error('Register Error:', err);
-    res.status(500).json({ message: 'Lỗi server khi đăng ký.' });
+    console.error("Register Error:", err);
+    res.status(500).json({ message: "Lỗi server khi đăng ký." });
   }
 };
 
@@ -64,27 +68,34 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   const password = req.body.password?.trim();
 
   if (!email || !password) {
-    res.status(400).json({ message: 'Thiếu email hoặc mật khẩu.' });
+    res.status(400).json({ message: "Thiếu email hoặc mật khẩu." });
     return;
   }
 
   try {
     const user = await User.findOne({ email });
     if (!user) {
-      res.status(401).json({ message: 'Email không tồn tại.' });
+      res.status(401).json({ message: "Email không tồn tại." });
       return;
     }
 
-    const isMatch = await user.comparePassword(password);
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      res.status(401).json({ message: 'Mật khẩu không đúng.' });
+      res.status(401).json({ message: "Mật khẩu không đúng." });
       return;
     }
 
-    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+    // Tạo JWT token
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    console.log(`🔑 User ${user.username} đăng nhập thành công với role: ${user.role}`);
 
     res.status(200).json({
-      message: 'Đăng nhập thành công.',
+      message: "Đăng nhập thành công.",
       token,
       user: {
         id: user._id,
@@ -97,7 +108,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       },
     });
   } catch (err) {
-    console.error('Login Error:', err);
-    res.status(500).json({ message: 'Lỗi server khi đăng nhập.' });
+    console.error("Login Error:", err);
+    res.status(500).json({ message: "Lỗi server khi đăng nhập." });
   }
 };

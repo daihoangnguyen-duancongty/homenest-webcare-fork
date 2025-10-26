@@ -1,22 +1,12 @@
 import dotenv from 'dotenv';
 dotenv.config();
-// 🔧 Loại bỏ khoảng trắng đầu/cuối cho toàn bộ biến môi trường
-for (const key in process.env) {
-  const value = process.env[key];
-  if (typeof value === 'string') {
-    process.env[key] = value.trim();
-  }
-}
-console.log('ZALO_REFRESH_TOKEN=', process.env.ZALO_REFRESH_TOKEN);
-console.log('ZALO_REFRESH_TOKEN trimmed:', process.env.ZALO_REFRESH_TOKEN?.trim());
-console.log('MONGO_URI:', `"${process.env.MONGO_URI}"`);
-console.log('ZALO_REFRESH_TOKEN:', `"${process.env.ZALO_REFRESH_TOKEN}"`);
+
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import path from 'path';
 import http from 'http';
 import { Server } from 'socket.io';
-import GuestUser from './models/ZaloGuestUser';
+
 // Import các connection riêng
 import { productDB, userDB, zaloMessageDB } from './database/connection';
 
@@ -43,22 +33,8 @@ app.get('/zalodomainverify.txt', (req: Request, res: Response) => {
   res.sendFile(filePath);
 });
 
-// -------------------- ✅ FIX CORS --------------------
-app.use(
-  cors({
-    origin: [
-      'http://localhost:5173', // local dev
-      'https://homenest-webcare.vercel.app', // nếu frontend deploy Vercel
-      'https://homenest-webcare.netlify.app', // nếu dùng Netlify (thêm nếu có)
-    ],
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
-  })
-);
-
 // -------------------- Middleware --------------------
-
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -83,21 +59,13 @@ const io = new Server(server, {
 io.on('connection', (socket) => {
   console.log('🔌 Client connected:', socket.id);
 
-  socket.on('join', async (userId: string) => {
+  socket.on('join', (userId: string) => {
     socket.join(userId);
     console.log(`👥 ${socket.id} joined room ${userId}`);
-
-    // đánh dấu online
-    await GuestUser.findByIdAndUpdate(userId, { isOnline: true });
-    // emit trạng thái mới
-    io.emit('user_online', { userId, isOnline: true });
   });
 
-  socket.on('disconnect', async () => {
+  socket.on('disconnect', () => {
     console.log('❌ Client disconnected:', socket.id);
-
-    // có thể lấy userId từ rooms để update offline
-    // hoặc frontend emit "leave"
   });
 });
 
