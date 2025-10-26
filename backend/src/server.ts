@@ -37,7 +37,9 @@ app.use('/api/users', authRoutes);
 
 // -------------------- Socket.IO Setup --------------------
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
+
+// ✅ Export io ngay khi khai báo
+export const io = new Server(server, { cors: { origin: '*' } });
 
 io.on('connection', (socket) => {
   console.log('🔌 Client connected:', socket.id);
@@ -48,3 +50,6 @@ io.on('connection', (socket) => {
 server.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
 });
+
+// ✅ Export app nếu cần import trong test hoặc các module khác
+export default app;
