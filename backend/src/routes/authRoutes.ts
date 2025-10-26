@@ -13,7 +13,7 @@ import upload from '../middleware/uploadCloud';
 
 const router = Router();
 
-// ✅ Route đăng ký (có upload avatar)
+// ✅ Route đăng ký (có upload avatar) -> upload len cloudinary
 router.post('/register', upload.single('avatar'), register);
 
 // ✅ Route đăng nhập
