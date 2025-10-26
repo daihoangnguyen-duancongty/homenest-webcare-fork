@@ -12,7 +12,6 @@ import ZaloToken from '../models/ZaloToken';
 import { createCallController } from '../controllers/zaloCallController';
 
 const router = Router();
-const ONLINE_THRESHOLD_MS = 5 * 60 * 1000;
 
 // Middleware parse text/plain
 router.use('/webhook', (req: Request, _res: Response, next: NextFunction) => {
@@ -57,7 +56,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
     const guestData = createMockUser(userId);
     const guest = await GuestUser.findOneAndUpdate(
       { _id: userId },
-      { $set: { lastInteraction: new Date() }, $setOnInsert: guestData },
+      { $setOnInsert: guestData },
       { upsert: true, new: true }
     );
 
@@ -78,9 +77,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
     admins.forEach((a) =>
       io.to((a._id as any).toString()).emit('new_message', {
         ...saved.toObject(),
-        isOnline: guest?.lastInteraction
-          ? Date.now() - guest.lastInteraction.getTime() < ONLINE_THRESHOLD_MS
-          : false, // thêm isOnline
+        isOnline: guest.isOnline ?? false, // thêm isOnline
       })
     );
 
@@ -122,10 +119,7 @@ router.get(
         if (!conversations[userId]) conversations[userId] = { userId, messages: [] };
 
         const guest = await GuestUser.findById(userId);
-
-        const isOnline = guest?.lastInteraction
-          ? Date.now() - guest.lastInteraction.getTime() < ONLINE_THRESHOLD_MS
-          : false;
+        const isOnline = guest?.isOnline ?? false;
 
         conversations[userId].messages.push({ ...msg, isOnline } as any);
       }
@@ -276,10 +270,7 @@ router.get('/messages/:userId', async (req, res) => {
     const messagesWithOnline = await Promise.all(
       messages.map(async (msg) => {
         const guest = await GuestUser.findById(msg.userId);
-        const isOnline = guest?.lastInteraction
-          ? Date.now() - guest.lastInteraction.getTime() < ONLINE_THRESHOLD_MS
-          : false;
-        return { ...msg, isOnline };
+        return { ...msg, isOnline: guest?.isOnline ?? false };
       })
     );
 
