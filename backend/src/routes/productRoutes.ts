@@ -1,4 +1,4 @@
-// FILE NÀY NHẬN KẾT QUẢ TỪ CONTROLLER PHÙ HỢP ĐỂ XỬ LÝ VÀ ĐIỀU HƯỚNG CHO SERVER ĐỂ VÀO DATABASE THỰC HIỆN THAY ĐỔI TRONG DATABASE
+// FILE NÀY SẼ NHẬN KẾT QUẢ TỪ CONTROLLER PHÙ HỢP ĐỂ XỬ LÝ VÀ ĐIỀU HƯỚNG CHO SERVER ĐỂ VÀO DATABASE THỰC HIỆN THAY ĐỔI TRONG DATABASE
 import { Router } from "express";
 import { getProducts,getProductById, addProduct,updateProduct,deleteProduct } from "../controllers/productController";
 import multer from 'multer';
