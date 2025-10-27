@@ -4,7 +4,11 @@ import CallLog from "../models/ZaloCall";
 import { getAccessToken } from "../services/zaloService";
 import { io } from "../server";
 import GuestUser from "../models/ZaloGuestUser";
+import UserModel from "../models/User"
 
+// ==========================
+// 📞 GỌI TỪ CRM → KHÁCH HÀNG
+// ==========================
 export const createCallController = async (req: Request, res: Response): Promise<void> => {
   console.log("🎯 Bắt đầu xử lý createCallController");
 
@@ -80,6 +84,48 @@ console.log(`📞 Gọi API Zalo với user_id: ${guest.zaloId}`);
     res.json({ success: true, callLink });
   } catch (err: any) {
     console.error("💥 /zalo/call/create error:", err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+// ==========================
+// 📞 GỌI TỪ KHÁCH HÀNG → CRM
+// ==========================
+export const inboundCallController = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { guestName, guestId, callLink, targetRole, targetUserId } = req.body;
+
+    console.log("📞 Inbound call event received:", req.body);
+
+    if (!callLink || !guestId) {
+      res.status(400).json({ success: false, message: "Thiếu callLink hoặc guestId" });
+      return;
+    }
+
+    // Emit socket cho CRM (admin hoặc telesale)
+    if (targetRole === "admin") {
+      const admins = await UserModel.find({ role: "admin" });
+      admins.forEach((a) => {
+        io.to((a._id as any).toString()).emit("inbound_call", {
+          guestId,
+          guestName,
+          callLink,
+          targetRole,
+        });
+      });
+    } else if (targetRole === "telesale" && targetUserId) {
+      io.to(targetUserId).emit("inbound_call", {
+        guestId,
+        guestName,
+        callLink,
+        targetRole,
+        targetUserId,
+      });
+    }
+
+    console.log(`✅ Đã emit socket inbound_call tới ${targetRole}`);
+    res.json({ success: true, message: "Inbound call emitted" });
+  } catch (err: any) {
+    console.error("❌ inboundCallController error:", err.message);
     res.status(500).json({ success: false, message: err.message });
   }
 };

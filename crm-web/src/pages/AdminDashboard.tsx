@@ -6,6 +6,9 @@ import ChatPanel from '../components/ChatPanel';
 import EmployeePanel from '../components/EmployeePanel';
 import type { ModuleKey } from './../components/sidebar/Sidebar';
 import { fetchConversations } from './../api/adminApi';
+import { useSocketStore } from '../store/socketStore';
+import { getCurrentUser } from '../utils/auth';
+import { toast } from 'react-toastify';
 
 export default function AdminDashboard() {
   const [openChats, setOpenChats] = useState<string[]>([]);
@@ -29,6 +32,14 @@ export default function AdminDashboard() {
   const handleCloseChat = (userId: string) => {
     setOpenChats((prev) => prev.filter((id) => id !== userId));
   };
+  // tao socket de nhan cuộc gọi
+  const { socket, initSocket } = useSocketStore();
+  const currentUser = getCurrentUser();
+
+useEffect(() => {
+  initSocket();
+}, [initSocket]);
+
     // ---------------- Mở conversation mới nhất khi load ----------------
   useEffect(() => {
     (async () => {
@@ -43,6 +54,34 @@ export default function AdminDashboard() {
       }
     })();
   }, []);
+  //---------------- Mở cuộc gọi từ khách hàng đến crm ----------------
+useEffect(() => {
+  if (!socket) return;
+
+  socket.on("inbound_call", (data) => {
+    console.log("📞 Cuộc gọi đến:", data);
+
+    if (
+      (currentUser.role === "admin" && data.targetRole === "admin") ||
+      (currentUser.role === "telesale" && data.targetUserId === currentUser.id)
+    ) {
+      toast.info(`📞 Khách hàng ${data.guestName} đang gọi đến!`, {
+        position: "top-center",
+        autoClose: false,
+        closeOnClick: false,
+        onClick: () => {
+          window.open(data.callLink, "_blank");
+        },
+      });
+    }
+  });
+
+  return () => {
+    socket.off("inbound_call");
+  };
+}, [socket, currentUser]);
+
+
   return (
     <Box sx={{ display: 'flex', position: 'relative', height: '100vh', width: '100vw' }}>
       <Header isExpanded={isSidebarExpanded} activeSection={activeModule} isMobile={mobileOpen} />

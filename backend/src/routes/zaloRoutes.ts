@@ -10,6 +10,7 @@ import { authenticateToken, AuthRequest } from '../middleware/authenticateJWT';
 import { authorizeRoles } from '../middleware/authorizeRole';
 import ZaloToken from '../models/ZaloToken';
 import { createCallController } from '../controllers/zaloCallController';
+import { inboundCallController } from "../controllers/zaloCallController";
 
 const router = Router();
 const ONLINE_THRESHOLD_MS = 5 * 60 * 1000;
@@ -303,10 +304,20 @@ router.get('/telesales', async (req, res) => {
 router.post(
   '/call/create',
   async (req, res, next) => {
-    console.log('🚀 Đã nhận POST /api/zalo/call/create với body:', req.body);
+    console.log('🚀 Đã nhận POST /api/zalo/call/create từ crm tới khách hàng với body:', req.body);
     next();
   },
   createCallController
+);
+//Gọi điện thoại zalo từ khách hàng ->  crm 
+
+router.post(
+  '/call/inbound',
+  async (req: Request, res: Response, next: NextFunction) => {
+    console.log('🚀 Đã nhận POST /api/zalo/call/inbound từ khách hàng tới crm với body:', req.body);
+    next();
+  },
+  inboundCallController
 );
 
 //kiểm tra Access Token & Refresh Token hiện tại mà backend lưu trong MongoDB
