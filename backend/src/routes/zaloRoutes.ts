@@ -329,23 +329,26 @@ router.post("/send-call-button", async (req, res) => {
     const { userId, productName } = req.body;
     const accessToken = await getAccessToken();
 
-    // 📩 Tin nhắn OA gửi tới khách hàng
     const message = {
-      recipient: {
-        user_id: userId,
-      },
+      recipient: { user_id: userId },
       message: {
-        text: `📞 Bạn muốn gọi tư vấn ngay về sản phẩm ${productName}?`,
-        buttons: [
-          {
-            title: "📞 Gọi tư vấn ngay",
-            payload: "CALL_NOW", // Callback này sẽ được Zalo gửi về webhook OA
+        attachment: {
+          type: "template",
+          payload: {
+            template_type: "button",
+            text: `📞 Bạn muốn gọi tư vấn ngay về sản phẩm "${productName}"?`,
+            buttons: [
+              {
+                title: "📞 Gọi tư vấn ngay",
+                type: "oa.query.hide", // hoặc "oa.query.show"
+                payload: "CALL_NOW",
+              },
+            ],
           },
-        ],
+        },
       },
     };
 
-    // 🛰️ Gửi tin nhắn qua API Zalo
     const zaloRes = await axios.post(
       "https://openapi.zalo.me/v3.0/oa/message",
       message,
@@ -357,16 +360,15 @@ router.post("/send-call-button", async (req, res) => {
       }
     );
 
-    console.log("✅ Đã gửi message chứa nút gọi tư vấn:", zaloRes.data);
-    res.json({ success: true });
+    console.log("✅ Gửi thành công nút gọi tư vấn:", zaloRes.data);
+    res.json({ success: true, data: zaloRes.data });
   } catch (err: any) {
-    console.error("❌ Lỗi gửi nút gọi tư vấn:", err.message);
+    console.error("❌ Lỗi gửi tin nhắn gọi tư vấn:", err.message);
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// HOẶC nếu Zalo chỉ GET URL (trong trường hợp "oa.open.url"):
-router.get("/call/inbound", inboundCallController);
+
 
 
 //============================================================
