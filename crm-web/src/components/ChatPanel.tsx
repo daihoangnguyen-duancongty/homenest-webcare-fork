@@ -49,6 +49,7 @@ export default function ChatPanel({
   onClick,
   sx,
 }: ChatPanelProps) {
+  const [callStatus, setCallStatus] = useState<string | null>(null);
   const [callLink, setCallLink] = useState<string | null>(null);
 const [loadingCallLink, setLoadingCallLink] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -241,21 +242,62 @@ const [loadingCallLink, setLoadingCallLink] = useState(false);
     }
   };
 //-----------------Call to Customer------------------------------------
-  const handleCallClick = async () => {
+const handleCallClick = async () => {
   if (!userId) return;
-   // ✅ Thêm log debug userId
-  console.log('Calling fetchCallLink with userId:', userId);
+  setLoadingCallLink(true);
+  setCallStatus("Đang tạo cuộc gọi...");
+
   try {
-    setLoadingCallLink(true);
+    console.log("📞 Gọi API tạo link call...");
+    // 1️⃣ Tạo link gọi từ backend
     const link = await fetchCallLink(userId);
+    if (!link) {
+      setCallStatus("❌ Không thể tạo link gọi Zalo");
+      alert("Không thể tạo link gọi Zalo!");
+      return;
+    }
+
+    console.log("✅ Link call nhận được:", link);
+
+    // 2️⃣ Gửi tin nhắn chứa link cho khách
+    setCallStatus("Đang gửi tin nhắn cho khách...");
+    const messageText = `📞 Mời anh/chị bấm để gọi video qua Zalo: ${link}`;
+    await axios.post(
+      `${BACKEND_URL}/api/zalo/send`,
+      { userId, text: messageText },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    // 3️⃣ Mở Zalo PC (deep link)
+    setCallStatus("Đang mở Zalo PC...");
+    const deepLink = link.replace("https://zalo.me/app/link/", "zalo://app/link/");
+    const iframe = document.createElement("iframe");
+    iframe.style.display = "none";
+    iframe.src = deepLink;
+    document.body.appendChild(iframe);
+
+    const start = Date.now();
+    setTimeout(() => {
+      const elapsed = Date.now() - start;
+      if (elapsed < 2500) {
+        window.open(link, "_blank");
+        alert("Nếu Zalo PC không tự mở, hãy nhấn 'Mở trong Zalo PC' trên trang vừa mở.");
+      }
+      document.body.removeChild(iframe);
+    }, 2000);
+
+    // ✅ Cập nhật UI
     setCallLink(link);
-    window.open(link, '_blank'); 
+    setCallStatus("✅ Đã gửi link gọi Zalo cho khách hàng");
   } catch (err) {
-    console.error(err);
+    console.error("❌ Lỗi khi gọi Zalo:", err);
+    setCallStatus("❌ Lỗi khi tạo hoặc gửi link gọi Zalo!");
   } finally {
     setLoadingCallLink(false);
+    setTimeout(() => setCallStatus(null), 6000); // Tự ẩn thông báo sau 6s
   }
 };
+
 
   // ----------------- Render -----------------
   return (
@@ -303,20 +345,38 @@ const [loadingCallLink, setLoadingCallLink] = useState(false);
               {messages[0]?.username ?? 'Khách hàng'}
             </Typography>
           </Box>
+          {callStatus && (
+  <Typography
+    variant="body2"
+    sx={{
+      backgroundColor: 'rgba(255,255,255,0.9)',
+      color: '#333',
+      p: 0.5,
+      px: 1,
+      borderRadius: 1,
+      textAlign: 'center',
+      fontSize: '0.8rem',
+    }}
+  >
+    {callStatus}
+  </Typography>
+)}
+
           <Typography variant="caption" sx={{ mt: 0.5, color: 'rgba(255,255,255,0.8)' }}>
             Đang được chăm sóc bởi: {assignedTelesale?.username ?? 'Đang tải...'}
           </Typography>
         </Box>
         <Box display="flex" alignItems="center" gap={0.5} sx={{ mx: 3 }}>
-     <IconButton
+   <IconButton
   size="small"
   sx={{ color: 'white' }}
-  onClick={handleCallClick} // ✅ gọi hàm đã khai báo
+  onClick={handleCallClick}
   disabled={loadingCallLink}
-  title="Gọi Zalo"
+  title={callLink ? "Gọi lại cuộc trước" : "Gọi Zalo"}
 >
   {loadingCallLink ? <CircularProgress size={16} sx={{ color: 'white' }} /> : '📞'}
 </IconButton>
+
 
 
 
