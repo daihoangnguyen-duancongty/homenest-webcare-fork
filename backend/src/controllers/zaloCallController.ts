@@ -92,38 +92,35 @@ console.log(`📞 Gọi API Zalo với user_id: ${guest.zaloId}`);
 // ==========================
 export const inboundCallController = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { guestName, guestId, callLink, targetRole, targetUserId } = req.body;
+    const { guestName, guestId, callLink, targetRole, targetUserId } =
+      req.method === "GET" ? req.query : req.body;
 
-    console.log("📞 Inbound call event received:", req.body);
+    console.log("📞 Inbound call event received:", req.method, req.query || req.body);
 
-    if (!callLink || !guestId) {
-      res.status(400).json({ success: false, message: "Thiếu callLink hoặc guestId" });
+    if (!guestId) {
+      res.status(400).json({ success: false, message: "Thiếu guestId" });
       return;
     }
 
-    // Emit socket cho CRM (admin hoặc telesale)
-    if (targetRole === "admin") {
+    const callData = {
+      guestId,
+      guestName: guestName || "Khách hàng Zalo",
+      callLink: callLink || "https://zalo.me/oa/yourOAID",
+      targetRole: targetRole || "admin",
+      targetUserId,
+    };
+
+    if (callData.targetRole === "admin") {
       const admins = await UserModel.find({ role: "admin" });
       admins.forEach((a) => {
-        io.to((a._id as any).toString()).emit("inbound_call", {
-          guestId,
-          guestName,
-          callLink,
-          targetRole,
-        });
+        io.to(a._id.toString()).emit("inbound_call", callData);
       });
-    } else if (targetRole === "telesale" && targetUserId) {
-      io.to(targetUserId).emit("inbound_call", {
-        guestId,
-        guestName,
-        callLink,
-        targetRole,
-        targetUserId,
-      });
+    } else if (callData.targetRole === "telesale" && callData.targetUserId) {
+      io.to(callData.targetUserId).emit("inbound_call", callData);
     }
 
-    console.log(`✅ Đã emit socket inbound_call tới ${targetRole}`);
-    res.json({ success: true, message: "Inbound call emitted" });
+    console.log(`✅ Đã emit socket inbound_call tới ${callData.targetRole}`);
+    res.json({ success: true, message: "Inbound call emitted", data: callData });
   } catch (err: any) {
     console.error("❌ inboundCallController error:", err.message);
     res.status(500).json({ success: false, message: err.message });

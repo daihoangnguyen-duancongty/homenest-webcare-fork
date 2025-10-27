@@ -4,7 +4,6 @@ import TransitionLink from './transition-link';
 import { Button, Icon } from 'zmp-ui';
 import { useAddToCart } from '@/hooks';
 import QuantityInput from './quantity-input';
-import { sendMessageAPI } from '@/api/chatZaloApi';
 import { fetchZaloUserId } from '@/utils/zaloUser';
 import zmp from 'zmp-sdk';
 
@@ -22,51 +21,38 @@ export default function ProductItem(props: ProductItemProps) {
   const [uiLog, setUiLog] = useState('');
 
   useEffect(() => {
-    (async () => {
+  (async () => {
+    try {
       const id = await fetchZaloUserId();
       if (id) setUserId(id);
-    })();
-  }, []);
+    } catch (err) {
+      setUiLog('Không lấy được Zalo userId');
+    }
+  })();
+}, []);
+
 
   const handleOpenZaloChat = async () => {
-    try {
-      zmp.openChat({
-        type: 'oa',
-        id: props.product.userId || '2405262870078293027',
-      });
-      await sendMessageAPI(
-        props.product.userId || 'unknown',
-        `Xin tư vấn về sản phẩm ${props.product.name}`
-      );
-    } catch (err: any) {
-      setUiLog('Lỗi mở chat: ' + err.message);
-    }
-  };
+  try {
+    zmp.openChat({
+      type: 'oa',
+      id: props.product.userId || '2405262870078293027',
+    });
 
-  const handleZaloCall = async () => {
-    if (!userId) {
-      setUiLog('Chưa lấy được Zalo userId');
-      return;
-    }
-    try {
-      const res = await fetch(
-        'https://homenest-webcare-fork-backend.onrender.com/api/zalo/call/create',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId }),
-        }
-      );
-      const data = await res.json();
-      if (data.success && data.callLink) {
-        zmp.openLink({ url: data.callLink });
-      } else {
-        setUiLog('Gọi thất bại: ' + (data.message || 'Không tạo được call link'));
-      }
-    } catch (err: any) {
-      setUiLog('Lỗi khi gọi: ' + err.message);
-    }
-  };
+    // Gửi tin nhắn chứa nút 📞 Gọi tư vấn ngay
+    await fetch('https://homenest-webcare-fork-backend.onrender.com/api/zalo/send-call-button', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId,
+        productName: props.product.name,
+      }),
+    });
+  } catch (err: any) {
+    setUiLog('Lỗi mở chat: ' + err.message);
+  }
+};
+
 
   return (
     <div
@@ -115,33 +101,22 @@ export default function ProductItem(props: ProductItemProps) {
             </div>
           </TransitionLink>
 
-          <div className="flex gap-2 p-2 pt-0 mt-auto">
+          <div className="flex gap-2 p-2 pt-0 mt-auto mx-auto w-[36vw]">
             {cartQuantity === 0 ? (
               <>
                 <Button
                   variant="secondary"
                   size="small"
-                  className="flex-1 text-white bg-gradient-to-r from-[#2563eb] to-[#7c3aed] rounded-full shadow-xl hover:opacity-90 transition-all duration-200 ease-in-out"
+                  className="flex-1 text-white bg-gradient-to-r from-[#2563eb] to-[#7c3aed] rounded-full shadow-xl hover:opacity-90 transition-all duration-200 ease-in-out "
                   onClick={async (e) => {
                     e.stopPropagation();
                     await handleOpenZaloChat();
                   }}
                 >
-                  <Icon icon="zi-chat-solid" className="w-4 h-4 mb-0 mr-2 text-white" />
+                  <Icon icon="zi-chat-solid" className="w-4 h-4 mb-0 mr-3 mb-2 text-white" />
                   Tư vấn
                 </Button>
-                <Button
-                  variant="secondary"
-                  size="small"
-                  className="flex-1 text-white bg-gradient-to-r from-[#10b981] to-[#3b82f6] rounded-full shadow-xl hover:opacity-90 transition-all duration-200 ease-in-out"
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    await handleZaloCall();
-                  }}
-                >
-                  <Icon icon="zi-phone-solid" className="w-4 h-4 mb-0 mr-2 text-white" />
-                  Gọi
-                </Button>
+                
               </>
             ) : (
               <QuantityInput value={cartQuantity} onChange={addToCart} />

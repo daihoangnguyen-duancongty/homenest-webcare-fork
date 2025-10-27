@@ -77,6 +77,37 @@ useEffect(() => {
     socket.off("inbound_call");
   };
 }, [socket, currentUser]);
+ //---------------- Lắng nghe sự kiện inbound_call từ socket (khách gọi đến crm) ----------------
+useEffect(() => {
+  if (!socket) return;
+
+  const handleInboundCall = (data: any) => {
+    console.log("📞 Cuộc gọi đến:", data);
+
+    if (
+      (currentUser.role === "admin" && data.targetRole === "admin") ||
+      (currentUser.role === "telesale" && data.targetUserId === currentUser.id)
+    ) {
+      toast.info(`📞 Khách hàng ${data.guestName} đang gọi đến!`, {
+        position: "top-center",
+        autoClose: false,
+        closeOnClick: false,
+        onClick: () => {
+          window.open(data.callLink, "_blank");
+        },
+      });
+    }
+  };
+
+  // 👉 Lắng nghe sự kiện inbound_call
+  socket.on("inbound_call", handleInboundCall);
+
+  // 👉 Cleanup đúng kiểu
+  return () => {
+    socket.off("inbound_call", handleInboundCall);
+  };
+}, [socket, currentUser]);
+
 
   return (
     <Box

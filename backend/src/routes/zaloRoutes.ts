@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { Router, Request, Response, NextFunction } from 'express';
 import { io } from '../server';
 import { getTokenController, sendMessageController } from '../controllers/zaloController';
@@ -11,6 +12,8 @@ import { authorizeRoles } from '../middleware/authorizeRole';
 import ZaloToken from '../models/ZaloToken';
 import { createCallController } from '../controllers/zaloCallController';
 import { inboundCallController } from "../controllers/zaloCallController";
+import { getAccessToken } from '../services/zaloService';
+
 
 const router = Router();
 const ONLINE_THRESHOLD_MS = 5 * 60 * 1000;
@@ -300,6 +303,7 @@ router.get('/telesales', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+//=====================CAll zalo==========================
 // Gọi điện thoại zalo từ crm -> khách hàng
 router.post(
   '/call/create',
@@ -319,7 +323,61 @@ router.post(
   },
   inboundCallController
 );
+//route mới để gửi tin nhắn OA có nút “Gọi ngay” đến khách hàng
+router.post("/send-call-button", async (req, res) => {
+  try {
+    const { userId, productName } = req.body;
+    const accessToken = await getAccessToken();
 
+    const inboundUrl = `https://homenest-webcare-fork-backend.onrender.com/api/zalo/call/inbound?guestId=${userId}&guestName=${encodeURIComponent(
+      "Khách hàng Zalo"
+    )}&targetRole=admin`;
+
+    const message = {
+      recipient: { user_id: userId },
+      message: {
+        text: `💬 Bạn quan tâm sản phẩm "${productName}"?`,
+        attachment: {
+          type: "template",
+          payload: {
+            template_type: "button",
+            text: "Bạn có thể gọi tư vấn trực tiếp với nhân viên của chúng tôi 👇",
+            buttons: [
+              {
+                title: "📞 Gọi tư vấn ngay",
+                type: "oa.open.url",
+                payload: { url: inboundUrl },
+              },
+            ],
+          },
+        },
+      },
+    };
+
+    const zaloRes = await axios.post(
+      "https://openapi.zalo.me/v3.0/oa/message/cs",
+      message,
+      {
+        headers: {
+          access_token: accessToken,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log("✅ Đã gửi message chứa nút gọi tư vấn:", zaloRes.data);
+    res.json({ success: true });
+  } catch (err: any) {
+    console.error("❌ Lỗi gửi nút gọi tư vấn:", err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// HOẶC nếu Zalo chỉ GET URL (trong trường hợp "oa.open.url"):
+router.get("/call/inbound", inboundCallController);
+
+
+//============================================================
 //kiểm tra Access Token & Refresh Token hiện tại mà backend lưu trong MongoDB
 router.get('/token/latest', async (_req, res) => {
   const token = await ZaloToken.findOne().sort({ createdAt: -1 });
