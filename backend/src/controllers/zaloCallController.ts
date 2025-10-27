@@ -22,10 +22,11 @@ export const createCallController = async (req: Request, res: Response): Promise
     // 🔹 Lấy guest để lấy zaloId
     const guest: any = await GuestUser.findById(userId);
 if (!guest?.zaloId) {
-  console.warn("⚠️ Guest chưa có zaloId");
-  res.status(400).json({ success: false, message: "Guest chưa có zaloId" });
-  return;
+  console.warn("⚠️ Guest chưa có zaloId, tự set zaloId bằng _id");
+  guest.zaloId = guest._id;
+  await guest.save();
 }
+
 
 console.log(`📞 Gọi API Zalo với user_id: ${guest.zaloId}`);
 
