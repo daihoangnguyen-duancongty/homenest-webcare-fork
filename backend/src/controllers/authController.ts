@@ -60,28 +60,43 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
 // ------------------ Hàm đăng nhập ------------------
 export const login = async (req: Request, res: Response): Promise<void> => {
-  const email = req.body.email?.trim();
-  const password = req.body.password?.trim();
-
-  if (!email || !password) {
-    res.status(400).json({ message: 'Thiếu email hoặc mật khẩu.' });
-    return;
-  }
-
   try {
+    // 🔹 Log body nhận được
+    console.log('--- [LOGIN] req.body ---', req.body);
+
+    if (!req.body || typeof req.body !== 'object') {
+      console.warn('⚠️ req.body is missing or not an object');
+      res.status(400).json({ message: 'Không có dữ liệu gửi lên.' });
+      return;
+    }
+
+    const email = typeof req.body.email === 'string' ? req.body.email.trim() : null;
+    const password = typeof req.body.password === 'string' ? req.body.password.trim() : null;
+
+    console.log('--- [LOGIN] email:', email, 'password exists:', !!password);
+
+    if (!email || !password) {
+      res.status(400).json({ message: 'Thiếu email hoặc mật khẩu.' });
+      return;
+    }
+
     const user = await User.findOne({ email });
     if (!user) {
+      console.warn('⚠️ User not found for email:', email);
       res.status(401).json({ message: 'Email không tồn tại.' });
       return;
     }
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
+      console.warn('⚠️ Password mismatch for email:', email);
       res.status(401).json({ message: 'Mật khẩu không đúng.' });
       return;
     }
 
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+
+    console.log('✅ [LOGIN] Success for user:', email);
 
     res.status(200).json({
       message: 'Đăng nhập thành công.',
@@ -97,7 +112,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       },
     });
   } catch (err) {
-    console.error('Login Error:', err);
+    console.error('❌ [LOGIN] Server error:', err);
     res.status(500).json({ message: 'Lỗi server khi đăng nhập.' });
   }
 };
