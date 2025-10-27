@@ -50,7 +50,37 @@ router.post('/webhook', async (req: Request, res: Response) => {
     console.log('📥 Zalo webhook payload:', payload);
 
     res.status(200).send('OK'); // trả 200 ngay
+// xử lý cuộc gọi từ khách hàng
+  if (
+      payload?.event_name === "user_click_button" &&
+      payload?.message?.button?.payload === "CALL_NOW"
+    ) {
+      const sender = payload?.sender || payload?.user;
+      const guestId = sender?.id;
+      if (!guestId) return;
 
+      console.log("📞 Khách bấm 'Gọi tư vấn ngay' → tạo inbound call cho admin");
+
+      try {
+        await axios.post(
+          `${process.env.BACKEND_URL || "https://homenest-webcare-fork-backend.onrender.com"}/api/zalo/call/inbound`,
+          {
+            guestId,
+            guestName: "Khách hàng Zalo",
+            callLink: `https://zalo.me/oa/${process.env.ZALO_OA_ID || "2405262870078293027"}`,
+            targetRole: "admin",
+          }
+        );
+      } catch (err: any) {
+        console.error("❌ Lỗi gọi inboundCallController:", err.message);
+      }
+
+      return; // dừng xử lý tiếp
+    }
+
+
+
+    // xử lý tinh nhắn văn bản
     const sender = payload?.sender ?? payload?.user ?? null;
     if (!sender?.id) return;
 
