@@ -9,9 +9,10 @@ import { createMockUser } from '../utils/mockUser';
 import { authenticateToken, AuthRequest } from '../middleware/authenticateJWT';
 import { authorizeRoles } from '../middleware/authorizeRole';
 import ZaloToken from '../models/ZaloToken';
-
+import { createCallController } from '../controllers/zaloCallController';
 
 const router = Router();
+const ONLINE_THRESHOLD_MS = 5 * 60 * 1000;
 
 // Middleware parse text/plain
 router.use('/webhook', (req: Request, _res: Response, next: NextFunction) => {
@@ -56,7 +57,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
     const guestData = createMockUser(userId);
     const guest = await GuestUser.findOneAndUpdate(
       { _id: userId },
-      { $setOnInsert: guestData },
+      { $set: { lastInteraction: new Date() }, $setOnInsert: guestData },
       { upsert: true, new: true }
     );
 
@@ -77,7 +78,9 @@ router.post('/webhook', async (req: Request, res: Response) => {
     admins.forEach((a) =>
       io.to((a._id as any).toString()).emit('new_message', {
         ...saved.toObject(),
-        isOnline: guest.isOnline ?? false, // thêm isOnline
+        isOnline: guest?.lastInteraction
+          ? Date.now() - guest.lastInteraction.getTime() < ONLINE_THRESHOLD_MS
+          : false, // thêm isOnline
       })
     );
 
@@ -92,8 +95,7 @@ router.get('/token', getTokenController);
 router.post('/send', authenticateToken, sendMessageController);
 
 // Conversations – gom theo userId
-// Conversations – gom theo userId
-// Conversations – gom theo userId, có phân trang
+
 router.get(
   '/conversations',
   authenticateToken,
@@ -101,53 +103,54 @@ router.get(
   async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const user = req.user!;
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 20;
-      const skip = (page - 1) * limit;
-
       let messagesQuery: IZaloMessage[] = [];
 
-      // Lấy toàn bộ message hoặc theo telesale
       if (user.role === 'admin') {
-        messagesQuery = await ZaloMessageModel.find()
-          .sort({ sentAt: -1 }) // tin mới nhất trước
-          .skip(skip)
-          .limit(limit)
-          .lean();
+        messagesQuery = await ZaloMessageModel.find().sort({ sentAt: 1 }).lean();
       } else {
         messagesQuery = await ZaloMessageModel.find({ assignedTelesale: user.id })
-          .sort({ sentAt: -1 })
-          .skip(skip)
-          .limit(limit)
+          .sort({ sentAt: 1 })
           .lean();
       }
 
-      // Gom tin nhắn theo userId
       const conversations: Record<string, { userId: string; messages: IZaloMessage[] }> = {};
+
       for (const msg of messagesQuery) {
         const userId =
           typeof msg.userId === 'string' ? msg.userId : (msg.userId as IGuestUser)._id.toString();
 
         if (!conversations[userId]) conversations[userId] = { userId, messages: [] };
-        conversations[userId].messages.push(msg);
+
+        const guest = await GuestUser.findById(userId);
+
+        const isOnline = guest?.lastInteraction
+          ? Date.now() - guest.lastInteraction.getTime() < ONLINE_THRESHOLD_MS
+          : false;
+
+        conversations[userId].messages.push({ ...msg, isOnline } as any);
       }
 
-      // Lấy thêm info user từ GuestUser
+      // 🆕 Bổ sung thêm phần lấy thông tin user (username, avatar, isOnline)
       const enrichedConversations = await Promise.all(
         Object.values(conversations).map(async (conv) => {
           const guest = await GuestUser.findById(conv.userId).lean();
           const latestMessage =
-            conv.messages.length > 0 ? conv.messages[0] : null; // do sort -1 nên phần tử đầu là mới nhất
-
+            conv.messages.length > 0 ? conv.messages[conv.messages.length - 1] : null;
+          // ✅ Đếm tin nhắn chưa đọc
+          const unreadCount = await ZaloMessageModel.countDocuments({
+            userId: conv.userId,
+            senderType: 'customer',
+            read: false,
+          });
           return {
             userId: conv.userId,
             username: guest?.username || 'Khách hàng',
-            avatar:
-              guest?.avatar || 'https://ui-avatars.com/api/?name=Guest&background=random',
+            avatar: guest?.avatar || 'https://ui-avatars.com/api/?name=Guest&background=random',
             isOnline: guest?.isOnline ?? false,
             assignedTelesale: guest?.assignedTelesale || null,
             lastMessage: latestMessage?.text || '',
             lastSentAt: latestMessage?.sentAt || latestMessage?.createdAt,
+            unreadCount,
             messages: conv.messages,
           };
         })
@@ -155,24 +158,34 @@ router.get(
 
       // Sắp xếp theo thời gian gần nhất
       enrichedConversations.sort(
-        (a, b) =>
-          new Date(b.lastSentAt ?? 0).getTime() - new Date(a.lastSentAt ?? 0).getTime()
+        (a, b) => new Date(b.lastSentAt ?? 0).getTime() - new Date(a.lastSentAt ?? 0).getTime()
       );
 
-      res.json({
-        page,
-        limit,
-        count: enrichedConversations.length,
-        hasMore: enrichedConversations.length === limit, // để FE biết còn hay không
-        data: enrichedConversations,
-      });
+      res.json(enrichedConversations);
     } catch (err: any) {
       console.error('❌ /conversations error:', err);
       res.status(500).json({ error: err.message });
     }
   }
 );
-
+// Đánh dấu tin nhắn đã đọc
+router.patch(
+  '/messages/:userId/read',
+  authenticateToken,
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const { userId } = req.params;
+      const result = await ZaloMessageModel.updateMany(
+        { userId, senderType: 'customer', read: false },
+        { $set: { read: true } }
+      );
+      res.json({ success: true, modified: result.modifiedCount });
+    } catch (err: any) {
+      console.error('❌ /messages/:userId/read error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
 
 //
 router.post(
@@ -202,7 +215,6 @@ router.post(
     }
   }
 );
-
 
 // Assign telesale (admin only)
 router.post(
@@ -248,7 +260,6 @@ router.post(
   }
 );
 
-
 // Messages user
 router.get('/messages/:userId', async (req, res) => {
   const { userId } = req.params;
@@ -265,7 +276,10 @@ router.get('/messages/:userId', async (req, res) => {
     const messagesWithOnline = await Promise.all(
       messages.map(async (msg) => {
         const guest = await GuestUser.findById(msg.userId);
-        return { ...msg, isOnline: guest?.isOnline ?? false };
+        const isOnline = guest?.lastInteraction
+          ? Date.now() - guest.lastInteraction.getTime() < ONLINE_THRESHOLD_MS
+          : false;
+        return { ...msg, isOnline };
       })
     );
 
@@ -285,6 +299,16 @@ router.get('/telesales', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// Gọi điện thoại zalo
+router.post(
+  '/call/create',
+  async (req, res, next) => {
+    console.log('🚀 Đã nhận POST /api/zalo/call/create với body:', req.body);
+    next();
+  },
+  createCallController
+);
+
 //kiểm tra Access Token & Refresh Token hiện tại mà backend lưu trong MongoDB
 router.get('/token/latest', async (_req, res) => {
   const token = await ZaloToken.findOne().sort({ createdAt: -1 });
