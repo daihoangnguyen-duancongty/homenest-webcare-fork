@@ -329,33 +329,25 @@ router.post("/send-call-button", async (req, res) => {
     const { userId, productName } = req.body;
     const accessToken = await getAccessToken();
 
-    const inboundUrl = `https://homenest-webcare-fork-backend.onrender.com/api/zalo/call/inbound?guestId=${userId}&guestName=${encodeURIComponent(
-      "Khách hàng Zalo"
-    )}&targetRole=admin`;
-
+    // 📩 Tin nhắn OA gửi tới khách hàng
     const message = {
-      recipient: { user_id: userId },
+      recipient: {
+        user_id: userId,
+      },
       message: {
-        text: `💬 Bạn quan tâm sản phẩm "${productName}"?`,
-        attachment: {
-          type: "template",
-          payload: {
-            template_type: "button",
-            text: "Bạn có thể gọi tư vấn trực tiếp với nhân viên của chúng tôi 👇",
-            buttons: [
-              {
-                title: "📞 Gọi tư vấn ngay",
-                type: "oa.open.url",
-                payload: { url: inboundUrl },
-              },
-            ],
+        text: `📞 Bạn muốn gọi tư vấn ngay về sản phẩm ${productName}?`,
+        buttons: [
+          {
+            title: "📞 Gọi tư vấn ngay",
+            payload: "CALL_NOW", // Callback này sẽ được Zalo gửi về webhook OA
           },
-        },
+        ],
       },
     };
 
+    // 🛰️ Gửi tin nhắn qua API Zalo
     const zaloRes = await axios.post(
-      "https://openapi.zalo.me/v3.0/oa/message/cs",
+      "https://openapi.zalo.me/v3.0/oa/message",
       message,
       {
         headers: {
