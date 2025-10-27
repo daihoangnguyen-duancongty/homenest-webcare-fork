@@ -1,4 +1,7 @@
 import { Router } from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 import { register, login } from '../controllers/authController';
 import { authenticateToken } from '../middleware/authenticateJWT';
 import { authorizeAdmin, authorizeTelesale, authorizeRoles } from '../middleware/authorizeRole';
@@ -8,12 +11,12 @@ import {
   updateEmployee,
   deleteEmployee,
 } from '../controllers/employeeController';
-import UserModel from '../models/User';
 import upload from '../middleware/uploadCloud';
-
 const router = Router();
 
-// ✅ Route đăng ký (có upload avatar) -> upload len cloudinary
+
+
+// ✅ Route đăng ký (có upload avatar)
 router.post('/register', upload.single('avatar'), register);
 
 // ✅ Route đăng nhập
@@ -35,36 +38,12 @@ router.get('/dashboard', authenticateToken, authorizeRoles(['admin', 'telesale']
 });
 // ✅ Lấy danh sách nhân viên (telesales)
 router.get('/employees', authenticateToken, authorizeAdmin, getEmployees);
-// ✅ Lấy  nhân viên (telesales) theo ID
-router.get('/:id', authenticateToken, async (req, res) => {
-  try {
-    const user = await UserModel.findById(req.params.id).lean();
-    if (!user) {
-      res.status(404).json({ message: 'User not found' });
-      return;
-    }
-    res.json(user);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+
 // ✅ Tạo nhân viên mới
-router.post(
-  '/employees',
-  authenticateToken,
-  authorizeAdmin,
-  upload.single('avatar'),
-  createEmployee
-);
+router.post('/employees', authenticateToken, authorizeAdmin, upload.single('avatar'), createEmployee);
 
 // ✅ Cập nhật nhân viên
-router.put(
-  '/employees/:id',
-  authenticateToken,
-  authorizeAdmin,
-  upload.single('avatar'),
-  updateEmployee
-);
+router.put('/employees/:id', authenticateToken, authorizeAdmin, upload.single('avatar'), updateEmployee);
 
 // ✅ Xóa nhân viên
 router.delete('/employees/:id', authenticateToken, authorizeAdmin, deleteEmployee);
