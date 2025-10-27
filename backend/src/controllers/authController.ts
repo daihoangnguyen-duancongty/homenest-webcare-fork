@@ -7,34 +7,31 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 
 // ------------------ Hàm đăng ký ------------------
 export const register = async (req: Request, res: Response): Promise<void> => {
-  const email = req.body.email?.trim();
-  const password = req.body.password?.trim();
-  const confirmPassword = req.body.confirmPassword?.trim();
-  const username = req.body.username?.trim();
-  const phone = req.body.phone?.trim();
-  const address = req.body.address?.trim();
-  const role = req.body.role?.trim() as 'admin' | 'telesale' | undefined;
-  const avatar = req.file;
-
-  if (!email || !password || !confirmPassword || !username || !phone || !address) {
-    res.status(400).json({ message: 'Thiếu thông tin đăng ký.' });
-    return;
-  }
-  if (password !== confirmPassword) {
-    res.status(400).json({ message: 'Mật khẩu xác nhận không khớp.' });
-    return;
-  }
-
   try {
+    const { email, password, confirmPassword, username, phone, address, role } = req.body;
+    const avatar = req.file;
+
+    if (!email || !password || !confirmPassword || !username || !phone || !address) {
+      res.status(400).json({ message: 'Thiếu thông tin đăng ký.' });
+      return;
+    }
+    if (password !== confirmPassword) {
+      res.status(400).json({ message: 'Mật khẩu xác nhận không khớp.' });
+      return;
+    }
+
     const existing = await User.findOne({ email });
     if (existing) {
       res.status(400).json({ message: 'Email đã tồn tại.' });
       return;
     }
 
+    // 🔹 Hash password trước khi tạo User
+    const hashedPassword = await User.hashPassword(password);
+
     const newUser = new User({
       email,
-      password, // Mongoose pre('save') sẽ hash tự động
+      password: hashedPassword, // chỉ hash 1 lần
       username,
       phone,
       address,
@@ -46,18 +43,15 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     await newUser.save();
 
-    res
-      .status(201)
-      .json({
-        message: 'Đăng ký thành công.',
-        user: { id: newUser._id, username: newUser.username, role: newUser.role },
-      });
-  } catch (err) {
+    res.status(201).json({
+      message: 'Đăng ký thành công.',
+      user: { id: newUser._id, username: newUser.username, role: newUser.role },
+    });
+  } catch (err: any) {
     console.error('Register Error:', err);
     res.status(500).json({ message: 'Lỗi server khi đăng ký.' });
   }
 };
-
 // ------------------ Hàm đăng nhập ------------------
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
