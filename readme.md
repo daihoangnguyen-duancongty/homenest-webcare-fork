@@ -49,44 +49,39 @@ TEST
 
 Admin:
 
-User:tiennguyen@example.com
-Pass: tien1234
+User:tiennguyen@admin.com
+Pass: tiennguyen1234
+
+userid: 68feeddee4931d950230f744
+
+"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZmVlZGRlZTQ5MzFkOTUwMjMwZjc0NCIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MTUzNzc3NSwiZXhwIjoxNzYyMTQyNTc1fQ.yJSaZjnv0OSEWeDYd18uY4d8QIPAXc3mOwTCIizg41M",
 
 Admin:
 
-User:verdhnadmin3@example.com
-Pass: admin126
+User:verdhn@admin.com
+Pass: admin0001
 
-userid: 68edc52b8d8a13bb957d8cf3
-"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWRjNTJiOGQ4YTEzYmI5NTdkOGNmMyIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MDQxMzAxMCwiZXhwIjoxNzYxMDE3ODEwfQ.uUEXRJ4gPi0L3C8MRUVeEJzGiHF-pI1XFPrtl9WuGoI",
+userid: 68feee68e4931d950230f749
+
+"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZmVlZTY4ZTQ5MzFkOTUwMjMwZjc0OSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2MTUzNzc5OCwiZXhwIjoxNzYyMTQyNTk4fQ.DRixNWbopvt4PRisB7f10YXq9sbvCqvwm4JYtzZL_IY",
 
 Telesale 4:
 
 User:verdhntelesales4@example.com
-Pass: telesale127
+Pass: telesale004
 
-userid:68edc5fc8d8a13bb957d8cfa
-"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWRjNWZjOGQ4YTEzYmI5NTdkOGNmYSIsInJvbGUiOiJ0ZWxlc2FsZSIsImlhdCI6MTc2MDQxMzI4NiwiZXhwIjoxNzYxMDE4MDg2fQ.FQPVW5SuQRywjTauJujDJv4JuHazbx5eLzTEK-tNoL0",
+userid:68feeca0e4931d950230f73a
+
+"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZmVlY2EwZTQ5MzFkOTUwMjMwZjczYSIsInJvbGUiOiJ0ZWxlc2FsZSIsImlhdCI6MTc2MTUzNzgyOSwiZXhwIjoxNzYyMTQyNjI5fQ.BqAJfdUBPkSsUB8ZfC85QtHxUij-w5Pzdvb5hkHsK1w",
 
 Telesale 6:
 
 User:verdhntelesales6@example.com
-Pass: telesale128
+Pass: telesale006
 
-userid:68edc6388d8a13bb957d8cff
-"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZWRjNjM4OGQ4YTEzYmI5NTdkOGNmZiIsInJvbGUiOiJ0ZWxlc2FsZSIsImlhdCI6MTc2MDQxMzMxNCwiZXhwIjoxNzYxMDE4MTE0fQ.Q9lya3mj_6GFHY_TBLHi6Y7aTEuyCmSa7rwVluofk0s",
+userid:68feecdce4931d950230f73f
+"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZmVlY2RjZTQ5MzFkOTUwMjMwZjczZiIsInJvbGUiOiJ0ZWxlc2FsZSIsImlhdCI6MTc2MTUzNzg2NCwiZXhwIjoxNzYyMTQyNjY0fQ.ZcQw7sON1P0BCe4rPh1TSz-mjetqMzqfZbDfhZg9B8c",
 
-Telesale 9:
-User:verdhntelesales9@example.com
-Pass: telesale9
-
-Telesale 10:
-User:verdhntelesales10@example.com
-Pass: telesale10
-
-Telesale 11:
-User:verdhntelesales11@example.com
-Pass: telesale11
 
 ------Socket io:
 

@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, useTheme, useMediaQuery } from '@mui/material';
 import Sidebar from './../components/sidebar/Sidebar';
 import Header from '../components/Header';
 import ChatPanel from '../components/ChatPanel';
 import EmployeePanel from '../components/EmployeePanel';
 import type { ModuleKey } from './../components/sidebar/Sidebar';
+import { fetchConversations } from './../api/adminApi';
 
 export default function AdminDashboard() {
   const [openChats, setOpenChats] = useState<string[]>([]);
@@ -17,16 +18,31 @@ export default function AdminDashboard() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   // mo nhieu chat cung luc
-  const handleOpenChat = (userId: string) => {
+    const handleOpenChat = (userId: string) => {
     setOpenChats((prev) => {
       if (!prev.includes(userId)) return [...prev, userId];
       return prev;
     });
+    setActiveChat(userId);
   };
 
   const handleCloseChat = (userId: string) => {
     setOpenChats((prev) => prev.filter((id) => id !== userId));
   };
+    // ---------------- Mở conversation mới nhất khi load ----------------
+  useEffect(() => {
+    (async () => {
+      try {
+        const conversations = await fetchConversations();
+        if (conversations.length > 0) {
+          const latest = conversations[0]; // mặc định lấy conversation mới nhất
+          handleOpenChat(latest.userId);
+        }
+      } catch (err) {
+        console.error('Cannot fetch conversations on load:', err);
+      }
+    })();
+  }, []);
   return (
     <Box sx={{ display: 'flex', position: 'relative', height: '100vh', width: '100vw' }}>
       <Header isExpanded={isSidebarExpanded} activeSection={activeModule} isMobile={mobileOpen} />

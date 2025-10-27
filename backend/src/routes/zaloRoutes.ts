@@ -57,7 +57,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
     const guestData = createMockUser(userId);
     const guest = await GuestUser.findOneAndUpdate(
       { _id: userId },
-      { $set: { lastInteraction: new Date() }, $setOnInsert: guestData },
+      { $set: { lastInteraction: new Date() , zaloId: userId}, $setOnInsert: guestData },
       { upsert: true, new: true }
     );
 
@@ -299,7 +299,7 @@ router.get('/telesales', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-// Gọi điện thoại zalo
+// Gọi điện thoại zalo từ crm -> khách hàng
 router.post(
   '/call/create',
   async (req, res, next) => {

@@ -1,3 +1,4 @@
+import axios from 'axios';
 import type { Message, User } from '../types';
 import { getToken } from '../utils/auth';
 import { BACKEND_URL } from './fetcher';
@@ -47,6 +48,33 @@ export const sendMessage = async (userId: string, text: string) => {
 
   return res.json();
 };
+
+// 📞 Telesale gọi cho khách hàng
+
+export const fetchCallLink = async (userId: string): Promise<string> => {
+  const token = getToken();
+  if (!userId) throw new Error('userId không hợp lệ');
+  try {
+    const res = await axios.post<{ success: boolean; callLink: string }>(
+      `${BACKEND_URL}/api/zalo/call/create`,
+      { userId },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (res.data.success) {
+      return res.data.callLink;
+    } else {
+      throw new Error('Không thể tạo link gọi Zalo');
+    }
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
+      console.error('❌ fetchCallLink failed:', err.response?.data || err.message);
+    } else {
+      console.error('❌ fetchCallLink failed:', err);
+    }
+    throw new Error('Không thể tạo link gọi Zalo');
+  }
+};
+
 
 // 👥 Lấy danh sách telesale (chỉ admin)
 export const fetchTelesales = async (): Promise<User[]> => {

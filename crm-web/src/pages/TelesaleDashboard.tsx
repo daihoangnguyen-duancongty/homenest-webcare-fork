@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { Box } from '@mui/material';
 import Sidebar from './../components/sidebar/Sidebar';
 import Header from '../components/Header';
 import ChatPanel from '../components/ChatPanel';
 import { getCurrentUser } from '../utils/auth';
+import { fetchConversations } from './../api/adminApi';
 
 export default function TelesaleDashboard() {
   const [openChats, setOpenChats] = useState<string[]>([]);
@@ -16,16 +17,31 @@ export default function TelesaleDashboard() {
   const user = getCurrentUser();
   const role = user?.role || 'telesale';
   // mo nhieu chat cung luc
-  const handleOpenChat = (userId: string) => {
+    const handleOpenChat = (userId: string) => {
     setOpenChats((prev) => {
       if (!prev.includes(userId)) return [...prev, userId];
       return prev;
     });
+    setActiveChat(userId);
   };
 
   const handleCloseChat = (userId: string) => {
     setOpenChats((prev) => prev.filter((id) => id !== userId));
   };
+   // ---------------- Mở conversation mới nhất khi load ----------------
+    useEffect(() => {
+      (async () => {
+        try {
+          const conversations = await fetchConversations();
+          if (conversations.length > 0) {
+            const latest = conversations[0]; // mặc định lấy conversation mới nhất
+            handleOpenChat(latest.userId);
+          }
+        } catch (err) {
+          console.error('Cannot fetch conversations on load:', err);
+        }
+      })();
+    }, []);
   return (
     <Box
       sx={{

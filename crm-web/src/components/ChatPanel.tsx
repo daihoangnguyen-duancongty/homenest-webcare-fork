@@ -19,6 +19,7 @@ import { BACKEND_URL } from '../api/fetcher';
 import { useSocketStore } from '../store/socketStore';
 import { useChatStore } from '../store/chatStore';
 import type { UserWithOnline } from '../types/index';
+import {fetchCallLink} from './../api/zaloApi'
 
 interface ChatPanelProps {
   userId: string;
@@ -48,11 +49,12 @@ export default function ChatPanel({
   onClick,
   sx,
 }: ChatPanelProps) {
+  const [callLink, setCallLink] = useState<string | null>(null);
+const [loadingCallLink, setLoadingCallLink] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-
   const currentUser = getCurrentUser();
   const token = getToken();
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -238,6 +240,22 @@ export default function ChatPanel({
       await fetchMessages(messages[0]._id);
     }
   };
+//-----------------Call to Customer------------------------------------
+  const handleCallClick = async () => {
+  if (!userId) return;
+   // ✅ Thêm log debug userId
+  console.log('Calling fetchCallLink with userId:', userId);
+  try {
+    setLoadingCallLink(true);
+    const link = await fetchCallLink(userId);
+    setCallLink(link);
+    window.open(link, '_blank'); 
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoadingCallLink(false);
+  }
+};
 
   // ----------------- Render -----------------
   return (
@@ -290,9 +308,18 @@ export default function ChatPanel({
           </Typography>
         </Box>
         <Box display="flex" alignItems="center" gap={0.5} sx={{ mx: 3 }}>
-          <IconButton size="small" sx={{ color: 'white' }}>
-            📞
-          </IconButton>
+     <IconButton
+  size="small"
+  sx={{ color: 'white' }}
+  onClick={handleCallClick} // ✅ gọi hàm đã khai báo
+  disabled={loadingCallLink}
+  title="Gọi Zalo"
+>
+  {loadingCallLink ? <CircularProgress size={16} sx={{ color: 'white' }} /> : '📞'}
+</IconButton>
+
+
+
           <IconButton size="small" sx={{ color: 'white' }}>
             🏷️
           </IconButton>
