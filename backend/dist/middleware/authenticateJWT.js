@@ -5,24 +5,35 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.authenticateToken = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const User_1 = __importDefault(require("../models/User"));
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
-const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
+// ✅ Middleware xác thực JWT và load user từ DB
+const authenticateToken = async (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.split(' ')[1]; // Bearer <token>
     if (!token) {
         res.status(401).json({ message: 'Không có token, truy cập bị từ chối.' });
         return;
     }
     try {
-        // Ép kiểu giá trị decoded thành { role: "admin" | "customer" | "telesale"; ... }
         const decoded = jsonwebtoken_1.default.verify(token, JWT_SECRET);
-        console.log('Decoded user từ token:', decoded);
-        req.user = decoded; // Lưu thông tin user vào req để dùng ở route sau
+        const user = await User_1.default.findById(decoded.id).select('-password');
+        if (!user) {
+            res.status(404).json({ message: 'Không tìm thấy người dùng.' });
+            return;
+        }
+        req.user = {
+            id: user._id.toString(),
+            email: user.email,
+            username: user.username,
+            role: user.role,
+            avatar: user.avatar,
+        };
         next();
     }
     catch (err) {
+        console.error('❌ Lỗi xác thực JWT:', err);
         res.status(403).json({ message: 'Token không hợp lệ.' });
-        return;
     }
 };
 exports.authenticateToken = authenticateToken;
