@@ -39,6 +39,10 @@ import { BASE_URL } from './../../api/zaloApi';
 import { useSocketStore } from '../../store/socketStore';
 import type { UserOnlinePayload, NewMessagePayload } from '../../types/socket';
 import type { Message } from '../../types/index';
+import SearchBar from "./../SearchBar";
+import { Mic } from "@mui/icons-material";
+import SortFilter from "./../SortFilter";
+import LabelDialog from "../LabelDialog";
 
 export type ModuleKey = 'chat' | 'employee' | 'automation' | 'reports';
 
@@ -86,6 +90,20 @@ export default function Sidebar({
 }: SidebarProps) {
   // dùng zutand quản lý socket
   const { socket, isConnected } = useSocketStore();
+  //tim kiem
+  const [query, setQuery] = useState("");
+  //sort
+  const [filter, setFilter] = useState<string>("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  //lable
+  const [isLabelDialogOpen, setIsLabelDialogOpen] = useState(false);
+const [availableLabels, setAvailableLabels] = useState<string[]>([
+  "Khách tiềm năng",
+  "Đã mua",
+  "Quan tâm",
+]);
+
+
   //
   const [conversations, setConversations] = useState<ConversationWithAssign[]>([]);
   const [activeUser, setActiveUser] = useState<string | null>(null);
@@ -265,9 +283,24 @@ export default function Sidebar({
       loadConversations(nextPage);
     }
   };
+  //sort
+  const handleFilterChange = (value: string) => {
+    console.log("Đang lọc theo:", value);
+    setFilter(value);
+  };
 
+  const handleSortChange = (order: "asc" | "desc") => {
+    console.log("Thay đổi sắp xếp:", order);
+    setSortOrder(order);
+  };
+
+  const handleClear = () => {
+    setFilter("");
+    setSortOrder("asc");
+  };
+  //
   const allMenuItems: { key: ModuleKey; icon: ReactNode; label: string; roles: string[] }[] = [
-    { key: 'chat', icon: <ChatIcon />, label: 'Chat', roles: ['admin', 'telesale'] },
+    { key: 'chat', icon: <ChatIcon />, label: 'Quản lý trò chuyện', roles: ['admin', 'telesale'] },
     { key: 'employee', icon: <GroupIcon />, label: 'Quản lý nhân viên', roles: ['admin'] },
     { key: 'automation', icon: <AutoModeIcon />, label: 'Automation', roles: ['admin'] },
     { key: 'reports', icon: <AssessmentIcon />, label: 'Báo cáo', roles: ['admin'] },
@@ -431,9 +464,35 @@ export default function Sidebar({
                   background: 'linear-gradient(90deg, #6a11cb, #2575fc)',
                 }}
               />
+              
             </Box>
           )}
-
+              {/* SearchBar */}
+   <div style={{ padding: 20, maxWidth: 400 }}>
+      <SearchBar
+        value={query}
+        onChange={setQuery}
+        onClear={() => setQuery("")}
+        onSearch={(val) => console.log("Search:", val)}
+        placeholder="Tìm kiếm bạn bè, tin nhắn..."
+        rightIcon={<Mic fontSize="small" />}
+        bgcolor="#f1f3f4"
+        radius={30}
+      />
+    </div>
+        <SortFilter
+        filters={[
+          { label: "Tên người dùng", value: "username" },
+          { label: "Nhãn", value: "label" },
+          { label: "Ngày tham gia", value: "joined" },
+        ]}
+        selectedFilter={filter}
+        sortOrder={sortOrder}
+        onFilterChange={handleFilterChange}
+        onSortChange={handleSortChange}
+        onClear={handleClear}
+        sx={{ maxWidth: 400 }}
+      />
           {/* Conversations */}
           {isExpanded && activeSection === 'chat' && (
             <Box sx={{ flex: 1, overflowY: 'auto', mt: 0.5 }} onScroll={handleScroll}>
@@ -629,7 +688,23 @@ export default function Sidebar({
                                 Phân công
                               </MenuItem>
                               <MenuItem onClick={(e) => e.stopPropagation()}>Xóa</MenuItem>
-                              <MenuItem onClick={(e) => e.stopPropagation()}>Gắn nhãn</MenuItem>
+                              <MenuItem
+  onClick={(e) => {
+    e.stopPropagation();
+    setSelectedConversation(c);
+    setIsLabelDialogOpen(true);
+    setConversations((prev) =>
+      prev.map((conv) =>
+        conv.userId === c.userId
+          ? { ...conv, isAssignMenuOpen: false, showAssignSubmenu: false }
+          : conv
+      )
+    );
+  }}
+>
+  Gắn nhãn
+</MenuItem>
+
                             </Paper>
                           )}
 
@@ -723,6 +798,28 @@ export default function Sidebar({
               </Button>
             </DialogActions>
           </Dialog>
+          {/* LabelDialog */}
+<LabelDialog
+  open={isLabelDialogOpen}
+  onClose={() => setIsLabelDialogOpen(false)}
+  selectedConversation={selectedConversation || undefined}
+  availableLabels={availableLabels}
+  setAvailableLabels={setAvailableLabels}
+  onSave={(label) => {
+    if (!selectedConversation) return;
+    setConversations((prev) =>
+      prev.map((conv) =>
+        conv.userId === selectedConversation.userId
+          ? { ...conv, label }
+          : conv
+      )
+    );
+    setToast({
+      open: true,
+      message: `✅ Đã gắn nhãn "${label}" cho ${selectedConversation.name}`,
+    });
+  }}
+/>
 
           {/* Snackbar */}
           <Snackbar
@@ -848,7 +945,19 @@ export default function Sidebar({
                 />
               </Box>
             )}
-
+     {/* SearchBar */}
+   <div style={{ padding: 20, maxWidth: 400 }}>
+      <SearchBar
+        value={query}
+        onChange={setQuery}
+        onClear={() => setQuery("")}
+        onSearch={(val) => console.log("Search:", val)}
+        placeholder="Tìm kiếm bạn bè, tin nhắn..."
+        rightIcon={<Mic fontSize="small" />}
+        bgcolor="#f1f3f4"
+        radius={30}
+      />
+    </div>
             {/* Conversations */}
             {mobileOpen && activeSection === 'chat' && (
               <Box
@@ -1054,7 +1163,23 @@ export default function Sidebar({
                                   Phân công
                                 </MenuItem>
                                 <MenuItem onClick={(e) => e.stopPropagation()}>Xóa</MenuItem>
-                                <MenuItem onClick={(e) => e.stopPropagation()}>Gắn nhãn</MenuItem>
+                                <MenuItem
+  onClick={(e) => {
+    e.stopPropagation();
+    setSelectedConversation(c);
+    setIsLabelDialogOpen(true);
+    setConversations((prev) =>
+      prev.map((conv) =>
+        conv.userId === c.userId
+          ? { ...conv, isAssignMenuOpen: false, showAssignSubmenu: false }
+          : conv
+      )
+    );
+  }}
+>
+  Gắn nhãn
+</MenuItem>
+
                               </Paper>
                             )}
 
@@ -1147,6 +1272,28 @@ export default function Sidebar({
                 </Button>
               </DialogActions>
             </Dialog>
+                {/* LabelDialog*/}
+<LabelDialog
+  open={isLabelDialogOpen}
+  onClose={() => setIsLabelDialogOpen(false)}
+  selectedConversation={selectedConversation || undefined}
+  availableLabels={availableLabels}
+  setAvailableLabels={setAvailableLabels}
+  onSave={(label) => {
+    if (!selectedConversation) return;
+    setConversations((prev) =>
+      prev.map((conv) =>
+        conv.userId === selectedConversation.userId
+          ? { ...conv, label }
+          : conv
+      )
+    );
+    setToast({
+      open: true,
+      message: `✅ Đã gắn nhãn "${label}" cho ${selectedConversation.name}`,
+    });
+  }}
+/>
 
             {/* Snackbar */}
             <Snackbar

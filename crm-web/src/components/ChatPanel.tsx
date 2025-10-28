@@ -21,6 +21,7 @@ import { useChatStore } from '../store/chatStore';
 import type { UserWithOnline } from '../types/index';
 import {fetchCallLink} from './../api/zaloApi'
 
+
 interface ChatPanelProps {
   userId: string;
   role?: 'admin' | 'telesale';
@@ -54,6 +55,7 @@ export default function ChatPanel({
 const [loadingCallLink, setLoadingCallLink] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
+  
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const currentUser = getCurrentUser();
