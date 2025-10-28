@@ -31,7 +31,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     const newUser = new User({
       email,
-      password: hashedPassword, // chỉ hash 1 lần
+      password, 
       username,
       phone,
       address,
