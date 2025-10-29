@@ -1,4 +1,7 @@
 // src/api/chatApi.ts
+
+import { BACKEND_URL } from "./fetcher";
+
 export interface SendMessageResponse {
   success: boolean;
   result?: { replyText?: string };
@@ -10,7 +13,7 @@ export const sendMessageAPI = async (
   text: string
 ): Promise<SendMessageResponse> => {
   try {
-    const res = await fetch('https://homenest-webcare-fork-backend.onrender.com/api/zalo/send', {
+    const res = await fetch(`${BACKEND_URL}/api/zalo/send`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, text }),

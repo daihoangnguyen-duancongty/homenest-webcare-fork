@@ -6,6 +6,8 @@ import { useAddToCart } from '@/hooks';
 import QuantityInput from './quantity-input';
 import { fetchZaloUserId } from '@/utils/zaloUser';
 import zmp from 'zmp-sdk';
+import { BACKEND_URL } from '@/api/fetcher';
+
 
 export interface ProductItemProps {
   product: Product;
@@ -40,7 +42,7 @@ export default function ProductItem(props: ProductItemProps) {
     });
 
     // Gửi tin nhắn chứa nút 📞 Gọi tư vấn ngay
-    await fetch('https://homenest-webcare-fork-backend.onrender.com/api/zalo/send-call-button', {
+    await fetch(`${BACKEND_URL}/api/zalo/send-call-button`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
