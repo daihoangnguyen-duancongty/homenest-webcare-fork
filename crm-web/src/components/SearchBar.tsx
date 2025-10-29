@@ -1,4 +1,5 @@
-import React, { useState, KeyboardEvent, ChangeEvent } from "react";
+import React, { useState } from "react";
+import type { KeyboardEvent, ChangeEvent } from 'react';
 import { alpha, styled } from "@mui/material/styles";
 import { InputBase, Box, IconButton } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
