@@ -75,7 +75,7 @@ app.use('/uploads', express.static(uploadDir));
 // -------------------- API Routes --------------------
 app.use('/api/products', productRoutes);
 app.use('/api/users', authRoutes);
-app.use('/api/users', cartRoutes);
+app.use('/api/cart', cartRoutes);
 app.use('/api/zalo', zaloRoutes);
 
 // -------------------- Socket.IO Setup --------------------
