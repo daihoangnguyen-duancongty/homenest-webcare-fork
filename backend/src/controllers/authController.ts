@@ -26,12 +26,10 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // 🔹 Hash password trước khi tạo User
-    const hashedPassword = await User.hashPassword(password);
-
+    // ✅ Không cần hash thủ công, vì userSchema.pre('save') đã làm rồi
     const newUser = new User({
       email,
-      password, 
+      password, // truyền mật khẩu gốc
       username,
       phone,
       address,
@@ -52,6 +50,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({ message: 'Lỗi server khi đăng ký.' });
   }
 };
+
 // ------------------ Hàm đăng nhập ------------------
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
