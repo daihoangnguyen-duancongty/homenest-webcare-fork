@@ -7,7 +7,7 @@
 # Cài thêm bash và coreutils để tránh lỗi Permission / find / cp
  RUN apk add --no-cache bash coreutils
 
-Copy package.json & package-lock.json để cài dependencies
+# Copy package.json & package-lock.json để cài dependencies
  COPY package*.json ./
 
 # Cài tất cả dependencies (bao gồm devDependencies để build TS)
