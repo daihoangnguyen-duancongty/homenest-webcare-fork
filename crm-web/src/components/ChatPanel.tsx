@@ -29,6 +29,7 @@ interface ChatPanelProps {
   onClose?: (userId: string) => void;
   onClick?: () => void;
   sx?: object;
+   initialPosition?: { x: number; y: number };
 }
 
 export interface Message {
@@ -48,7 +49,7 @@ export default function ChatPanel({
   onLoaded,
   onClose,
   onClick,
-  sx,
+  sx,initialPosition,
 }: ChatPanelProps) {
   const [callStatus, setCallStatus] = useState<string | null>(null);
   const [callLink, setCallLink] = useState<string | null>(null);
@@ -67,7 +68,11 @@ const [loadingCallLink, setLoadingCallLink] = useState(false);
   const setAssignedTelesaleStore = useChatStore((state) => state.setAssignedTelesale);
 
   // ----------------- Drag & Resize -----------------
-  const [position, setPosition] = useState({ top: 100, left: 100 });
+ const [position, setPosition] = useState<{ top: number; left: number }>(() => ({
+  top: initialPosition?.y ?? 100,
+  left: initialPosition?.x ?? 100,
+}));
+
   const [size, setSize] = useState({ width: 600, height: 500 });
   const [dragging, setDragging] = useState(false);
   const [resizing, setResizing] = useState(false);

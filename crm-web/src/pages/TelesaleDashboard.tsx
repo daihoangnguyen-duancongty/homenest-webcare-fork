@@ -13,19 +13,36 @@ export default function TelesaleDashboard() {
   const [activeModule, setActiveModule] = useState<'chat' | 'employee' | 'automation' | 'reports'>(
     'chat'
   );
+    const [chatPositions, setChatPositions] = useState<Record<string, { x: number; y: number }>>({});
+    
   const [activeChat, setActiveChat] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
-
+ const CHAT_DEFAULT_WIDTH = 600;
+const CHAT_DEFAULT_HEIGHT = 500;
+// vi tri ban dau cua coversation luc xuat hien
+const getCenterPosition = () => {
+  const x = window.innerWidth / 2 - CHAT_DEFAULT_WIDTH / 2;
+  const y = window.innerHeight / 2 - CHAT_DEFAULT_HEIGHT / 2;
+  return { x, y };
+};
   const user = getCurrentUser();
   const role = user?.role || 'telesale';
   // mo nhieu chat cung luc
-    const handleOpenChat = (userId: string) => {
-    setOpenChats((prev) => {
-      if (!prev.includes(userId)) return [...prev, userId];
-      return prev;
-    });
-    setActiveChat(userId);
-  };
+  const handleOpenChat = (userId: string) => {
+  setOpenChats((prev) => {
+    if (!prev.includes(userId)) {
+      const lastUserId = prev[prev.length - 1];
+      const lastPos = lastUserId
+        ? chatPositions[lastUserId]
+        : getCenterPosition(); // <-- center nếu chat đầu tiên
+      const newPos = { x: lastPos.x + 20, y: lastPos.y + 20 };
+      setChatPositions((pos) => ({ ...pos, [userId]: newPos }));
+      return [...prev, userId];
+    }
+    return prev;
+  });
+  setActiveChat(userId);
+};
 
   const handleCloseChat = (userId: string) => {
     setOpenChats((prev) => prev.filter((id) => id !== userId));
@@ -146,6 +163,7 @@ useEffect(() => {
                 key={userId}
                 userId={userId}
                 role="admin"
+                    initialPosition={chatPositions[userId]}
                 onClose={() => handleCloseChat(userId)}
                 onClick={() => setActiveChat(userId)} // khi click chat, set active
                 sx={{
