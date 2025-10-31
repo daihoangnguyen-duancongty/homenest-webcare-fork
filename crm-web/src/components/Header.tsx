@@ -38,7 +38,7 @@ export default function Header({ activeSection, isMobile,isExpanded, ...props }:
   // Lấy user từ localStorage
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const username = user.username || 'User';
-
+ const avatar = user.avatar || 'User';
   let label = '';
   switch (activeSection) {
     case 'chat':
@@ -107,7 +107,7 @@ export default function Header({ activeSection, isMobile,isExpanded, ...props }:
           <Box onClick={handleMenuOpen} sx={{ display:"flex", flexDirection:"row", gap:"1rem" }}>
             <Avatar
               alt={username}
-              src="https://api.dicebear.com/7.x/avataaars/svg?seed=tech"
+              src={avatar}
               sx={{ width: 30, height: 30 }}
             />
           
