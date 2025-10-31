@@ -15,6 +15,7 @@ export interface IUser extends Document {
     originalname?: string;
   };
   role: 'admin' | 'telesale';
+  stringeeUserId?: string;
   comparePassword: (plain: string) => Promise<boolean>;
 }
 
@@ -41,6 +42,7 @@ const userSchema = new Schema<IUser>(
       default: {},
     },
     role: { type: String, enum: ['admin', 'telesale'], default: 'telesale' },
+      stringeeUserId: { type: String, default: null },
   },
   { timestamps: true }
 );

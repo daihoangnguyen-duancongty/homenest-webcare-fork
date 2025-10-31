@@ -1,13 +1,6 @@
 import dotenv from 'dotenv';
 dotenv.config();
-// 🔧 Loại bỏ khoảng trắng đầu/cuối cho toàn bộ biến môi trường
-for (const key in process.env) {
-  const value = process.env[key];
-  if (typeof value === 'string') {
-    process.env[key] = value.trim();
-  }
-}
-
+//
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -23,11 +16,19 @@ import authRoutes from './routes/authRoutes';
 import cartRoutes from './routes/cartRoutes';
 import zaloRoutes from './routes/zaloRoutes';
 import zaloGuestRoutes from './routes/zaloGuestRoutes';
+import stringeeRoutes from "./routes/stringeeRoutes";
 // Import models sử dụng đúng connection
 import UserModel from './models/User';
 // Import routes Zalo V4 User Access Token
 import session from 'express-session';
 import zaloUserRoutes from './routes/zaloUserRoutes';
+//
+// import admin from "firebase-admin";
+// import serviceAccount from "../serviceAccount.json";
+
+// admin.initializeApp({
+//   credential: admin.credential.cert(serviceAccount as any),
+// });
 // -------------------- Khởi tạo Express app --------------------
 const app = express();
 const PORT: number = parseInt(process.env.PORT || '5000', 10);
@@ -78,7 +79,7 @@ app.use('/api/users', authRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/zalo', zaloRoutes);
 app.use('/api/zalo', zaloGuestRoutes);
-
+app.use("/api/stringee", stringeeRoutes);
 // -------------------- Socket.IO Setup --------------------
 const server = http.createServer(app);
 

@@ -5,6 +5,9 @@ import { getAccessToken } from "../services/zaloService";
 import { io } from "../server";
 import GuestUser from "../models/ZaloGuestUser";
 import UserModel from "../models/User"
+import { callViaStringee } from "../utils/callViaStringee";
+// import { pushIncomingCall } from "../utils/pushFCM";
+import User from "../models/User";
 
 // ==========================
 // 📞 GỌI TỪ CRM → KHÁCH HÀNG
@@ -92,37 +95,60 @@ console.log(`📞 Gọi API Zalo với user_id: ${guest.zaloId}`);
 // ==========================
 export const inboundCallController = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { guestName, guestId, callLink, targetRole, targetUserId } =
-      req.method === "GET" ? req.query : req.body;
+    const zaloUserId = req.body.zaloUserId;
 
-    console.log("📞 Inbound call event received:", req.method, req.query || req.body);
-
-    if (!guestId) {
-      res.status(400).json({ success: false, message: "Thiếu guestId" });
+    if (!zaloUserId) {
+      res.status(400).json({ success: false, message: "Thiếu zaloUserId" });
       return;
     }
 
-    const callData = {
-      guestId,
-      guestName: guestName || "Khách hàng Zalo",
-      callLink: callLink || "https://zalo.me/oa/yourOAID",
-      targetRole: targetRole || "admin",
-      targetUserId,
-    };
+    const guestId = `zalo_${zaloUserId}`;
+    console.log("📞 Cuộc gọi inbound từ:", guestId);
 
-    if (callData.targetRole === "admin") {
-      const admins = await UserModel.find({ role: "admin" });
-      admins.forEach((a) => {
-        io.to(a._id.toString()).emit("inbound_call", callData);
-      });
-    } else if (callData.targetRole === "telesale" && callData.targetUserId) {
-      io.to(callData.targetUserId).emit("inbound_call", callData);
+    // 🔹 Tìm telesale đang online
+    const telesale = await User.findOne({ role: "telesale", status: "online" });
+    if (!telesale) {
+      res.status(404).json({ message: "Không có telesale online" });
+      return;
     }
 
-    console.log(`✅ Đã emit socket inbound_call tới ${callData.targetRole}`);
-    res.json({ success: true, message: "Inbound call emitted", data: callData });
-  } catch (err: any) {
-    console.error("❌ inboundCallController error:", err.message);
-    res.status(500).json({ success: false, message: err.message });
+    // ✅ Lấy Stringee ID của telesale
+    let telesaleStringeeId: string;
+    if (telesale.stringeeUserId) {
+      telesaleStringeeId = telesale.stringeeUserId;
+    } else {
+      console.warn("⚠️ Telesale chưa có stringeeUserId, fallback dùng _id.");
+      telesaleStringeeId = telesale._id.toString();
+    }
+
+    // ✅ Gọi thật qua Stringee
+    const callResult = await callViaStringee(guestId, telesaleStringeeId);
+    console.log("📡 Stringee phản hồi:", callResult);
+
+    // 💾 Lưu log vào DB
+    const callLog = await CallLog.create({
+      caller: guestId, // khách gọi vào
+      callee: telesale._id.toString(), // telesale nhận
+      callLink: callResult?.callLink || "", // nếu có
+      status: "pending",
+      startedAt: new Date(),
+    });
+
+    console.log("✅ Đã lưu CallLog inbound:", callLog._id);
+
+    // 📡 Emit realtime event nếu cần hiển thị frontend
+    io.emit("incoming_call", {
+      callId: callLog._id,
+      telesaleName: telesale.username || "Telesale",
+      from: guestId,
+      to: telesale._id,
+      status: "Đang gọi...",
+      createdAt: callLog.createdAt,
+    });
+
+    res.json({ success: true, callId: callLog._id, callResult });
+  } catch (error: any) {
+    console.error("💥 inboundCallController error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
