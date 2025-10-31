@@ -47,6 +47,9 @@ export default function Header({ activeSection, isMobile,isExpanded, ...props }:
     case 'employee':
       label = 'Quản lý nhân viên';
       break;
+       case 'customer':
+      label = 'Quản lý khách hàng';
+      break;
     case 'automation':
       label = 'Tự động hóa';
       break;

@@ -10,6 +10,7 @@ import { useSocketStore } from '../store/socketStore';
 import { getCurrentUser } from '../utils/auth';
 import { toast } from 'react-toastify';
 import CustomerPanel from '../components/CustomerPanel';
+import DashboardModules from '../components/DashboardModules';
 
 export default function AdminDashboard() {
   const [openChats, setOpenChats] = useState<string[]>([]);
@@ -158,6 +159,12 @@ useEffect(() => {
           transition: 'margin-left 0.4s',
         }}
       >
+        <DashboardModules sx={{
+      position: 'absolute',
+      top: '7vh',
+      left: '8vw' ,
+      width: '90%',
+    }}/>
         {activeModule === 'chat' &&
           openChats.map((userId, idx) => {
             const isActive = activeChat === userId;
@@ -180,8 +187,19 @@ useEffect(() => {
             );
           })}
 
-        {activeModule === 'employee' && <EmployeePanel />}
-        {activeModule === 'customer' && <CustomerPanel onOpenChat={handleOpenChat} />}
+        {activeModule === 'employee' && <EmployeePanel sx={{
+      position: 'absolute',
+      top: '20vh',
+      left: '16vw' ,
+      width: '77%',
+    }}/>}
+        {activeModule === 'customer' && <CustomerPanel  sx={{
+      position: 'absolute',
+      top: '26vh',
+      left: '16vw' ,
+      width: '77%',
+    }}
+    onOpenChat={handleOpenChat} />}
 
       </Box>
       {/* ================= Loading overlay ================= */}

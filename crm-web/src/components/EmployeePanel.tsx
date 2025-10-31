@@ -28,7 +28,15 @@ import { getEmployees, createEmployee, updateEmployee, deleteEmployee } from '..
 import type { Employee } from '../api/authApi';
 import { useNavigate } from 'react-router-dom';
 
-export default function EmployeePanel() {
+
+interface EmployeePanelProps {
+
+  sx?: any;
+}
+
+
+
+export default function EmployeePanel({ sx }: EmployeePanelProps) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -162,7 +170,9 @@ export default function EmployeePanel() {
         maxWidth: '74vw',
         mx: '0vw',
         my: '6vh',
+         ...sx
       }}
+     
     >
       {serverError && (
         <Alert severity="error" sx={{ mb: 2 }}>
