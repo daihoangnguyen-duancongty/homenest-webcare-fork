@@ -50,33 +50,29 @@ router.post('/webhook', async (req: Request, res: Response) => {
     console.log('📥 Zalo webhook payload:', payload);
 
     res.status(200).send('OK'); // trả 200 ngay
-// xử lý cuộc gọi từ khách hàng
-  if (
-      payload?.event_name === "user_click_button" &&
-      payload?.message?.button?.payload === "CALL_NOW"
-    ) {
-      const sender = payload?.sender || payload?.user;
-      const guestId = sender?.id;
-      if (!guestId) return;
+// ✅ Xử lý khi khách bấm nút "Gọi tư vấn ngay"
+if (
+  payload?.event_name === "user_click_button" &&
+  payload?.message?.button?.payload === "CALL_NOW"
+) {
+  const sender = payload?.sender || payload?.user;
+  const zaloUserId = sender?.id;
+  if (!zaloUserId) return;
 
-      console.log("📞 Khách bấm 'Gọi tư vấn ngay' → tạo inbound call cho admin");
+  console.log("📞 Khách bấm 'Gọi tư vấn ngay' → tạo inbound call cho telesale");
 
-      try {
-        await axios.post(
-          `${process.env.BACKEND_URL || "https://homenest-webcare-fork-backend.onrender.com"}/api/zalo/call/inbound`,
-          {
-            guestId,
-            guestName: "Khách hàng Zalo",
-            callLink: `https://zalo.me/oa/${process.env.ZALO_OA_ID || "2405262870078293027"}`,
-            targetRole: "admin",
-          }
-        );
-      } catch (err: any) {
-        console.error("❌ Lỗi gọi inboundCallController:", err.message);
-      }
+  try {
+    // Gọi controller nội bộ để xử lý inbound call
+    await axios.post(
+      `${process.env.BACKEND_URL || "https://homenest-webcare-fork-production.up.railway.app"}/api/zalo/call/inbound`,
+      { zaloUserId }
+    );
+  } catch (err: any) {
+    console.error("❌ Lỗi gọi inboundCallController:", err.message);
+  }
 
-      return; // dừng xử lý tiếp
-    }
+  return; // Dừng xử lý tiếp
+}
 
 
 
@@ -180,7 +176,10 @@ router.get(
             userId: conv.userId,
             username: guest?.username || 'Khách hàng',
             avatar: guest?.avatar || 'https://ui-avatars.com/api/?name=Guest&background=random',
-            isOnline: guest?.isOnline ?? false,
+            isOnline: guest?.lastInteraction
+  ? Date.now() - guest.lastInteraction.getTime() < ONLINE_THRESHOLD_MS
+  : false
+,
             assignedTelesale: guest?.assignedTelesale || null,
             lastMessage: latestMessage?.text || '',
             lastSentAt: latestMessage?.sentAt || latestMessage?.createdAt,
