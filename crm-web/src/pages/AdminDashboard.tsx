@@ -9,6 +9,7 @@ import { fetchConversations } from './../api/adminApi';
 import { useSocketStore } from '../store/socketStore';
 import { getCurrentUser } from '../utils/auth';
 import { toast } from 'react-toastify';
+import CustomerPanel from '../components/CustomerPanel';
 
 export default function AdminDashboard() {
   const [openChats, setOpenChats] = useState<string[]>([]);
@@ -180,6 +181,8 @@ useEffect(() => {
           })}
 
         {activeModule === 'employee' && <EmployeePanel />}
+        {activeModule === 'customer' && <CustomerPanel onOpenChat={handleOpenChat} />}
+
       </Box>
       {/* ================= Loading overlay ================= */}
       {/* {globalLoading && (

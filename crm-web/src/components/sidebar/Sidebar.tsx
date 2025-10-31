@@ -26,6 +26,7 @@ import ChatIcon from '@mui/icons-material/Chat';
 import GroupIcon from '@mui/icons-material/Group';
 import AutoModeIcon from '@mui/icons-material/AutoMode';
 import AssessmentIcon from '@mui/icons-material/Assessment';
+import ContactsIcon from '@mui/icons-material/Contacts';
 import KeyboardDoubleArrowLeftIcon from '@mui/icons-material/KeyboardDoubleArrowLeft';
 import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight';
 import DehazeIcon from '@mui/icons-material/Dehaze';
@@ -44,7 +45,7 @@ import { Mic } from "@mui/icons-material";
 import SortFilter from "./../SortFilter";
 import LabelDialog from "../LabelDialog";
 
-export type ModuleKey = 'chat' | 'employee' | 'automation' | 'reports';
+export type ModuleKey = 'chat' | 'employee' | 'customer' | 'automation' | 'reports';
 
 export interface SidebarProps {
   onSelectUser: (userId: string) => void;
@@ -57,6 +58,7 @@ export interface SidebarProps {
 }
 
 export interface ConversationWithAssign extends Conversation {
+  label?: string; 
   isAssignMenuOpen?: boolean;
   showAssignSubmenu?: boolean;
   messages: Message[];
@@ -116,6 +118,10 @@ const [availableLabels, setAvailableLabels] = useState<string[]>([
   const [selectedConversation, setSelectedConversation] = useState<ConversationWithAssign | null>(
     null
   );
+  const [selectedLabel, setSelectedLabel] = useState<string>(
+  selectedConversation?.label || ""
+);
+
   const [selectedTelesale, setSelectedTelesale] = useState<Telesales | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [toast, setToast] = useState<{ open: boolean; message: string }>({
@@ -302,6 +308,7 @@ const [availableLabels, setAvailableLabels] = useState<string[]>([
   const allMenuItems: { key: ModuleKey; icon: ReactNode; label: string; roles: string[] }[] = [
     { key: 'chat', icon: <ChatIcon />, label: 'Quản lý trò chuyện', roles: ['admin', 'telesale'] },
     { key: 'employee', icon: <GroupIcon />, label: 'Quản lý nhân viên', roles: ['admin'] },
+    { key: 'customer', icon: <ContactsIcon />, label: 'Quản lý khách hàng', roles: ['admin'] },
     { key: 'automation', icon: <AutoModeIcon />, label: 'Automation', roles: ['admin'] },
     { key: 'reports', icon: <AssessmentIcon />, label: 'Báo cáo', roles: ['admin'] },
   ];
@@ -804,9 +811,13 @@ const [availableLabels, setAvailableLabels] = useState<string[]>([
   onClose={() => setIsLabelDialogOpen(false)}
   selectedConversation={selectedConversation || undefined}
   availableLabels={availableLabels}
+    selectedLabel={selectedLabel}      
+  setSelectedLabel={setSelectedLabel}
   setAvailableLabels={setAvailableLabels}
   onSave={(label) => {
     if (!selectedConversation) return;
+
+    // Cập nhật label cho conversation
     setConversations((prev) =>
       prev.map((conv) =>
         conv.userId === selectedConversation.userId
@@ -814,12 +825,20 @@ const [availableLabels, setAvailableLabels] = useState<string[]>([
           : conv
       )
     );
+
+    // Cập nhật availableLabels nếu chưa có
+    if (!availableLabels.includes(label)) {
+      setAvailableLabels((prev) => [...prev, label]);
+    }
+
+    // Hiện toast
     setToast({
       open: true,
       message: `✅ Đã gắn nhãn "${label}" cho ${selectedConversation.name}`,
     });
   }}
 />
+
 
           {/* Snackbar */}
           <Snackbar
@@ -1279,8 +1298,12 @@ const [availableLabels, setAvailableLabels] = useState<string[]>([
   selectedConversation={selectedConversation || undefined}
   availableLabels={availableLabels}
   setAvailableLabels={setAvailableLabels}
+    selectedLabel={selectedLabel}
+  setSelectedLabel={setSelectedLabel}
   onSave={(label) => {
     if (!selectedConversation) return;
+
+    // Cập nhật label cho conversation
     setConversations((prev) =>
       prev.map((conv) =>
         conv.userId === selectedConversation.userId
@@ -1288,12 +1311,20 @@ const [availableLabels, setAvailableLabels] = useState<string[]>([
           : conv
       )
     );
+
+    // Cập nhật availableLabels nếu chưa có
+    if (!availableLabels.includes(label)) {
+      setAvailableLabels((prev) => [...prev, label]);
+    }
+
+    // Hiện toast
     setToast({
       open: true,
       message: `✅ Đã gắn nhãn "${label}" cho ${selectedConversation.name}`,
     });
   }}
 />
+
 
             {/* Snackbar */}
             <Snackbar

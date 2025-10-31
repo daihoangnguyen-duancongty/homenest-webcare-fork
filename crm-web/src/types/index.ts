@@ -28,3 +28,13 @@ export interface Conversation {
   name?: string;
   lastMessage: string;
 }
+export interface GuestUser {
+ _id: string; // ID trong MongoDB
+  userId: string;
+  username: string;
+  email?: string;
+  avatar?: string;
+  isOnline?: boolean;
+  lastInteraction?: string | Date;
+  assignedTelesale?: string | null;
+}

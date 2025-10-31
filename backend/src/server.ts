@@ -22,7 +22,7 @@ import productRoutes from './routes/productRoutes';
 import authRoutes from './routes/authRoutes';
 import cartRoutes from './routes/cartRoutes';
 import zaloRoutes from './routes/zaloRoutes';
-
+import zaloGuestRoutes from './routes/zaloGuestRoutes';
 // Import models sử dụng đúng connection
 import UserModel from './models/User';
 // Import routes Zalo V4 User Access Token
@@ -77,6 +77,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/users', authRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/zalo', zaloRoutes);
+app.use('/api/zalo', zaloGuestRoutes);
 
 // -------------------- Socket.IO Setup --------------------
 const server = http.createServer(app);

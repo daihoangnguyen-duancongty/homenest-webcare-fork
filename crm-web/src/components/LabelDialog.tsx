@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -17,9 +17,11 @@ import {
 export interface LabelDialogProps {
   open: boolean;
   onClose: () => void;
-  selectedConversation?: { userId: string; name?: string };
+  selectedConversation?: { userId: string; name?: string; label?: string };
   availableLabels: string[];
   setAvailableLabels: React.Dispatch<React.SetStateAction<string[]>>;
+  selectedLabel: string; // từ parent
+  setSelectedLabel: (label: string) => void; // từ parent
   onSave: (label: string) => void;
 }
 
@@ -29,15 +31,24 @@ const LabelDialog: React.FC<LabelDialogProps> = ({
   selectedConversation,
   availableLabels,
   setAvailableLabels,
+  selectedLabel,
+  setSelectedLabel,
   onSave,
 }) => {
-  const [selectedLabel, setSelectedLabel] = useState("");
   const [newLabel, setNewLabel] = useState("");
 
+  // Reset input khi mở dialog
+  useEffect(() => {
+    if (open) {
+      setNewLabel("");
+    }
+  }, [open]);
+
   const handleAddNewLabel = () => {
-    if (newLabel.trim() && !availableLabels.includes(newLabel.trim())) {
-      setAvailableLabels((prev) => [...prev, newLabel.trim()]);
-      setSelectedLabel(newLabel.trim());
+    const trimmedLabel = newLabel.trim();
+    if (trimmedLabel && !availableLabels.includes(trimmedLabel)) {
+      setAvailableLabels((prev) => [...prev, trimmedLabel]);
+      setSelectedLabel(trimmedLabel); // chọn luôn nhãn vừa thêm
       setNewLabel("");
     }
   };
@@ -45,8 +56,14 @@ const LabelDialog: React.FC<LabelDialogProps> = ({
   const handleSave = () => {
     if (!selectedConversation || !selectedLabel) return;
     onSave(selectedLabel);
-    setSelectedLabel("");
     onClose();
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleAddNewLabel();
+    }
   };
 
   return (
@@ -57,8 +74,7 @@ const LabelDialog: React.FC<LabelDialogProps> = ({
         sx: {
           borderRadius: 4,
           background: "linear-gradient(135deg, #f5f7fa 0%, #e4ecfa 100%)",
-          boxShadow:
-            "0 8px 24px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.08)",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.08)",
         },
       }}
       sx={{ zIndex: 2600 }}
@@ -66,8 +82,7 @@ const LabelDialog: React.FC<LabelDialogProps> = ({
       <DialogTitle
         sx={{
           fontWeight: 600,
-          background:
-            "linear-gradient(90deg, #0078ff 0%, #8a2be2 100%)",
+          background: "linear-gradient(90deg, #0078ff 0%, #8a2be2 100%)",
           WebkitBackgroundClip: "text",
           WebkitTextFillColor: "transparent",
           fontSize: "1.2rem",
@@ -115,6 +130,7 @@ const LabelDialog: React.FC<LabelDialogProps> = ({
               placeholder="Nhập nhãn mới..."
               value={newLabel}
               onChange={(e) => setNewLabel(e.target.value)}
+              onKeyPress={handleKeyPress} // nhấn Enter để thêm
               sx={{
                 "& .MuiOutlinedInput-root": {
                   borderRadius: 3,
@@ -126,16 +142,14 @@ const LabelDialog: React.FC<LabelDialogProps> = ({
               variant="contained"
               onClick={handleAddNewLabel}
               sx={{
-                background:
-                  "linear-gradient(135deg, #0078ff 0%, #8a2be2 100%)",
+                background: "linear-gradient(135deg, #0078ff 0%, #8a2be2 100%)",
                 color: "#fff",
                 borderRadius: 3,
                 fontWeight: 600,
                 textTransform: "none",
                 px: 3,
                 "&:hover": {
-                  background:
-                    "linear-gradient(135deg, #0066e0 0%, #7a1fd4 100%)",
+                  background: "linear-gradient(135deg, #0066e0 0%, #7a1fd4 100%)",
                 },
               }}
             >
@@ -161,16 +175,14 @@ const LabelDialog: React.FC<LabelDialogProps> = ({
           variant="contained"
           onClick={handleSave}
           sx={{
-            background:
-              "linear-gradient(135deg, #0078ff 0%, #8a2be2 100%)",
+            background: "linear-gradient(135deg, #0078ff 0%, #8a2be2 100%)",
             color: "#fff",
             fontWeight: 600,
             textTransform: "none",
             borderRadius: 3,
             px: 3,
             "&:hover": {
-              background:
-                "linear-gradient(135deg, #0066e0 0%, #7a1fd4 100%)",
+              background: "linear-gradient(135deg, #0066e0 0%, #7a1fd4 100%)",
             },
           }}
         >
