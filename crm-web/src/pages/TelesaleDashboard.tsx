@@ -10,7 +10,7 @@ import { toast } from 'react-toastify';
 
 export default function TelesaleDashboard() {
   const [openChats, setOpenChats] = useState<string[]>([]);
-  const [activeModule, setActiveModule] = useState<'chat' | 'employee' | 'automation' | 'reports'>(
+  const [activeModule, setActiveModule] = useState<'chat' | 'employee' | 'customer' | 'automation' | 'reports'>(
     'chat'
   );
     const [chatPositions, setChatPositions] = useState<Record<string, { x: number; y: number }>>({});
