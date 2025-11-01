@@ -16,7 +16,7 @@ import { getAccessToken } from '../services/zaloService';
 
 
 const router = Router();
-const ONLINE_THRESHOLD_MS = 5 * 60 * 1000;
+const ONLINE_THRESHOLD_MS = 30 * 60 * 1000; // 30 phút
 
 // Middleware parse text/plain
 router.use('/webhook', (req: Request, _res: Response, next: NextFunction) => {
