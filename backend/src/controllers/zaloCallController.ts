@@ -100,7 +100,7 @@ console.log(`📞 Gọi API Zalo với user_id: ${guest.zaloId}`);
 // ==========================
 export const inboundCallController = async (req: Request, res: Response): Promise<void> => {
   try {
-    const zaloUserId = req.body.zaloUserId;
+    const { zaloUserId } = req.body;
     if (!zaloUserId) {
       res.status(400).json({ success: false, message: "Thiếu zaloUserId" });
       return;
@@ -109,7 +109,7 @@ export const inboundCallController = async (req: Request, res: Response): Promis
     const guestId = `zalo_${zaloUserId}`;
     console.log("📞 Inbound call from:", guestId);
 
-    // 🔹 Tìm telesale online
+    // Tìm telesale online
     const now = new Date();
     const telesale = await User.findOne({
       role: "telesale",
@@ -124,24 +124,19 @@ export const inboundCallController = async (req: Request, res: Response): Promis
 
     // ✅ Tạo token Stringee cho telesale
     const telesaleUserId = telesale.stringeeUserId || telesale._id.toString();
-    const stringeeToken = createStringeeToken(telesaleUserId);
+    const token = createStringeeToken(telesaleUserId);
 
-    // ✅ Gọi API Stringee
-    const callResult = await callViaStringee(guestId, telesaleUserId, stringeeToken);
+    console.log("📡 Calling Stringee:", { from: guestId, to: telesaleUserId });
 
-    // 🔹 Nếu callResult thất bại hoặc không có call_id, tạo dummy link
+    // ✅ Gọi Stringee với payload chuẩn
+    const callResult = await callViaStringee(guestId, telesaleUserId, token);
+
+    // 🔗 Lấy callLink an toàn
     const callLink =
-      callResult?.call_id
-        ? `https://admin.stringee.com/call/${callResult.call_id}`
-        : `pending-${Date.now()}`;
+      callResult?.call_link ||
+      `https://admin.stringee.com/call/${callResult?.call_id || "unknown"}`;
 
-    if (!callResult?.call_id) {
-      console.warn("⚠️ Call Stringee chưa thành công, dùng dummy callLink:", callLink);
-    } else {
-      console.log("🔗 CallLink từ Stringee:", callLink);
-    }
-
-    // 💾 Lưu log vào DB
+    // 💾 Lưu CallLog
     const callLog = await CallLog.create({
       caller: guestId,
       callee: telesale._id.toString(),
@@ -150,7 +145,7 @@ export const inboundCallController = async (req: Request, res: Response): Promis
       startedAt: new Date(),
     });
 
-    console.log("✅ CallLog inbound saved:", callLog._id);
+    console.log("✅ CallLog inbound saved:", callLog._id, "CallLink:", callLink);
 
     // 📡 Emit realtime event
     io.emit("incoming_call", {
@@ -159,13 +154,16 @@ export const inboundCallController = async (req: Request, res: Response): Promis
       from: guestId,
       to: telesale._id,
       status: "Đang gọi...",
-      callLink,
       createdAt: callLog.createdAt,
+      callLink,
     });
 
     res.json({ success: true, callId: callLog._id, callLink, callResult });
   } catch (error: any) {
-    console.error("💥 inboundCallController error:", error.response?.data || error.message);
+    console.error(
+      "💥 inboundCallController error:",
+      error.response?.data || error.message
+    );
     res.status(500).json({ success: false, message: error.message });
   }
 };
