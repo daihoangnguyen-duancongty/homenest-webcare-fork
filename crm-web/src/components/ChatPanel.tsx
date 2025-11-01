@@ -19,8 +19,7 @@ import { BACKEND_URL } from '../api/fetcher';
 import { useSocketStore } from '../store/socketStore';
 import { useChatStore } from '../store/chatStore';
 import type { UserWithOnline } from '../types/index';
-import {fetchCallLink} from './../api/zaloApi'
-
+import { fetchCallLink } from './../api/zaloApi';
 
 interface ChatPanelProps {
   userId: string;
@@ -29,7 +28,7 @@ interface ChatPanelProps {
   onClose?: (userId: string) => void;
   onClick?: () => void;
   sx?: object;
-   initialPosition?: { x: number; y: number };
+  initialPosition?: { x: number; y: number };
 }
 
 export interface Message {
@@ -49,30 +48,30 @@ export default function ChatPanel({
   onLoaded,
   onClose,
   onClick,
-  sx,initialPosition,
+  sx,
+  initialPosition,
 }: ChatPanelProps) {
   const [callStatus, setCallStatus] = useState<string | null>(null);
   const [callLink, setCallLink] = useState<string | null>(null);
-const [loadingCallLink, setLoadingCallLink] = useState(false);
+  const [loadingCallLink, setLoadingCallLink] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
-  
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+
   const currentUser = getCurrentUser();
   const token = getToken();
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const { socket, initSocket, disconnectSocket } = useSocketStore();
+  const { socket } = useSocketStore();
 
   const assignedTelesale = useChatStore((state) => state.assignedTelesale[userId]);
   const setAssignedTelesaleStore = useChatStore((state) => state.setAssignedTelesale);
 
   // ----------------- Drag & Resize -----------------
- const [position, setPosition] = useState<{ top: number; left: number }>(() => ({
-  top: initialPosition?.y ?? 100,
-  left: initialPosition?.x ?? 100,
-}));
-
+  const [position, setPosition] = useState<{ top: number; left: number }>(() => ({
+    top: initialPosition?.y ?? 100,
+    left: initialPosition?.x ?? 100,
+  }));
   const [size, setSize] = useState({ width: 600, height: 500 });
   const [dragging, setDragging] = useState(false);
   const [resizing, setResizing] = useState(false);
@@ -90,7 +89,7 @@ const [loadingCallLink, setLoadingCallLink] = useState(false);
   };
 
   const onResizeMouseDown = (e: React.MouseEvent) => {
-    e.stopPropagation(); // chặn drag
+    e.stopPropagation();
     setResizing(true);
     resizeStartRef.current = { x: e.clientX, y: e.clientY, width: size.width, height: size.height };
   };
@@ -105,23 +104,15 @@ const [loadingCallLink, setLoadingCallLink] = useState(false);
       }
       if (resizing) {
         setSize({
-          width: Math.max(
-            300,
-            resizeStartRef.current.width + (e.clientX - resizeStartRef.current.x)
-          ),
-          height: Math.max(
-            300,
-            resizeStartRef.current.height + (e.clientY - resizeStartRef.current.y)
-          ),
+          width: Math.max(300, resizeStartRef.current.width + (e.clientX - resizeStartRef.current.x)),
+          height: Math.max(300, resizeStartRef.current.height + (e.clientY - resizeStartRef.current.y)),
         });
       }
     };
-
     const onMouseUp = () => {
       setDragging(false);
       setResizing(false);
     };
-
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
     return () => {
@@ -133,19 +124,17 @@ const [loadingCallLink, setLoadingCallLink] = useState(false);
   // ----------------- Fetch assigned telesale -----------------
   const fetchAssignedTelesale = useCallback(
     async (telesaleId: string) => {
-      if (!telesaleId) return;
-      console.log('Calling fetchAssignedTelesale with ID:', telesaleId);
+      if (!telesaleId || assignedTelesale) return;
       try {
         const res = await axios.get<UserWithOnline>(`${BACKEND_URL}/api/users/${telesaleId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        // Cập nhật Zustand store
         setAssignedTelesaleStore(userId, { ...res.data, isOnline: res.data.isOnline ?? false });
       } catch (err) {
         console.error('Cannot fetch assigned telesale:', err);
       }
     },
-    [token, userId, setAssignedTelesaleStore]
+    [token, userId, assignedTelesale, setAssignedTelesaleStore]
   );
 
   // ----------------- Fetch messages -----------------
@@ -158,16 +147,12 @@ const [loadingCallLink, setLoadingCallLink] = useState(false);
           headers: { Authorization: `Bearer ${token}` },
           params: { role, beforeId },
         });
-
         if (res.data.length === 0) setHasMore(false);
         setMessages((prev) => (beforeId ? [...res.data, ...prev] : res.data));
 
-        // ----- Fetch assigned telesale ngay sau khi load messages -----
-        // Lấy message gần nhất có assignedTelesale
+        // Fetch assigned telesale nếu chưa có
         const lastAssigned = [...res.data].reverse().find((m) => m.assignedTelesale);
-        console.log('Last message with assignedTelesale:', lastAssigned);
         if (lastAssigned?.assignedTelesale) {
-          console.log('Calling fetchAssignedTelesale with ID:', lastAssigned.assignedTelesale);
           fetchAssignedTelesale(lastAssigned.assignedTelesale);
         }
 
@@ -182,7 +167,6 @@ const [loadingCallLink, setLoadingCallLink] = useState(false);
     [userId, role, token, hasMore, onLoaded, fetchAssignedTelesale]
   );
 
-  // ----------------- Effect re-fetch nếu messages update -----------------
   useEffect(() => {
     if (!assignedTelesale && messages.length > 0) {
       const lastAssigned = [...messages].reverse().find((m) => m.assignedTelesale);
@@ -194,11 +178,6 @@ const [loadingCallLink, setLoadingCallLink] = useState(false);
 
   // ----------------- Socket -----------------
   useEffect(() => {
-    initSocket();
-    return () => disconnectSocket();
-  }, [initSocket, disconnectSocket]);
-
-  useEffect(() => {
     if (!socket || !userId) return;
     socket.emit('join', currentUser.id);
     fetchMessages();
@@ -206,16 +185,12 @@ const [loadingCallLink, setLoadingCallLink] = useState(false);
 
   useEffect(() => {
     if (!socket) return;
-
     const handleNewMessage = (msg: Message) => {
       setMessages((prev) => [...prev, msg]);
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
-
       if (msg.assignedTelesale) fetchAssignedTelesale(msg.assignedTelesale);
     };
-
     socket.on('new_message', handleNewMessage);
-
     return () => {
       socket.off('new_message', handleNewMessage);
     };
@@ -248,63 +223,45 @@ const [loadingCallLink, setLoadingCallLink] = useState(false);
       await fetchMessages(messages[0]._id);
     }
   };
-//-----------------Call to Customer------------------------------------
-const handleCallClick = async () => {
-  if (!userId) return;
-  setLoadingCallLink(true);
-  setCallStatus("Đang tạo cuộc gọi...");
 
-  try {
-    console.log("📞 Gọi API tạo link call...");
-    // 1️⃣ Tạo link gọi từ backend
-    const link = await fetchCallLink(userId);
-    if (!link) {
-      setCallStatus("❌ Không thể tạo link gọi Zalo");
-      alert("Không thể tạo link gọi Zalo!");
-      return;
+  // ----------------- Call to Customer -----------------
+  const handleCallClick = async () => {
+    if (!userId) return;
+    setLoadingCallLink(true);
+    setCallStatus('Đang tạo cuộc gọi...');
+    try {
+      const link = await fetchCallLink(userId);
+      if (!link) throw new Error('Không thể tạo link gọi Zalo');
+
+      setCallStatus('Đang gửi tin nhắn cho khách...');
+      await axios.post(
+        `${BACKEND_URL}/api/zalo/send`,
+        { userId, text: `📞 Mời anh/chị bấm để gọi video qua Zalo: ${link}` },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setCallStatus('Đang mở Zalo PC...');
+      const deepLink = link.replace('https://zalo.me/app/link/', 'zalo://app/link/');
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = deepLink;
+      document.body.appendChild(iframe);
+
+      setTimeout(() => {
+        window.open(link, '_blank');
+        document.body.removeChild(iframe);
+      }, 2000);
+
+      setCallLink(link);
+      setCallStatus('✅ Đã gửi link gọi Zalo cho khách hàng');
+    } catch (err) {
+      console.error(err);
+      setCallStatus('❌ Lỗi khi tạo hoặc gửi link gọi Zalo!');
+    } finally {
+      setLoadingCallLink(false);
+      setTimeout(() => setCallStatus(null), 6000);
     }
-
-    console.log("✅ Link call nhận được:", link);
-
-    // 2️⃣ Gửi tin nhắn chứa link cho khách
-    setCallStatus("Đang gửi tin nhắn cho khách...");
-    const messageText = `📞 Mời anh/chị bấm để gọi video qua Zalo: ${link}`;
-    await axios.post(
-      `${BACKEND_URL}/api/zalo/send`,
-      { userId, text: messageText },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    // 3️⃣ Mở Zalo PC (deep link)
-    setCallStatus("Đang mở Zalo PC...");
-    const deepLink = link.replace("https://zalo.me/app/link/", "zalo://app/link/");
-    const iframe = document.createElement("iframe");
-    iframe.style.display = "none";
-    iframe.src = deepLink;
-    document.body.appendChild(iframe);
-
-    const start = Date.now();
-    setTimeout(() => {
-      const elapsed = Date.now() - start;
-      if (elapsed < 2500) {
-        window.open(link, "_blank");
-        alert("Nếu Zalo PC không tự mở, hãy nhấn 'Mở trong Zalo PC' trên trang vừa mở.");
-      }
-      document.body.removeChild(iframe);
-    }, 2000);
-
-    // ✅ Cập nhật UI
-    setCallLink(link);
-    setCallStatus("✅ Đã gửi link gọi Zalo cho khách hàng");
-  } catch (err) {
-    console.error("❌ Lỗi khi gọi Zalo:", err);
-    setCallStatus("❌ Lỗi khi tạo hoặc gửi link gọi Zalo!");
-  } finally {
-    setLoadingCallLink(false);
-    setTimeout(() => setCallStatus(null), 6000); // Tự ẩn thông báo sau 6s
-  }
-};
-
+  };
 
   // ----------------- Render -----------------
   return (
@@ -323,7 +280,7 @@ const handleCallClick = async () => {
         overflow: 'hidden',
         cursor: dragging ? 'grabbing' : 'grab',
         userSelect: dragging ? 'none' : 'auto',
-        zIndex: 100, // mặc định, sẽ override bằng sx từ AdminDashboard
+        zIndex: 100,
         ...sx,
       }}
     >
@@ -343,7 +300,10 @@ const handleCallClick = async () => {
       >
         <Box display="flex" flexDirection="column" flex={1} minWidth={0}>
           <Box display="flex" alignItems="center" gap={1} minWidth={0}>
-            <Avatar src={messages[0]?.avatar ?? ''} sx={{ width: 32, height: 32, flexShrink: 0 }} />
+            <Avatar
+              src={messages[0]?.avatar ?? '/default-avatar.png'}
+              sx={{ width: 32, height: 32, flexShrink: 0 }}
+            />
             <Typography
               noWrap
               fontWeight="bold"
@@ -353,43 +313,41 @@ const handleCallClick = async () => {
             </Typography>
           </Box>
           {callStatus && (
-  <Typography
-    variant="body2"
-    sx={{
-      backgroundColor: 'rgba(255,255,255,0.9)',
-      color: '#333',
-      p: 0.5,
-      px: 1,
-      borderRadius: 1,
-      textAlign: 'center',
-      fontSize: '0.8rem',
-    }}
-  >
-    {callStatus}
-  </Typography>
-)}
-
+            <Typography
+              variant="body2"
+              sx={{
+                backgroundColor: 'rgba(255,255,255,0.9)',
+                color: '#333',
+                p: 0.5,
+                px: 1,
+                borderRadius: 1,
+                textAlign: 'center',
+                fontSize: '0.8rem',
+              }}
+            >
+              {callStatus}
+            </Typography>
+          )}
           <Typography variant="caption" sx={{ mt: 0.5, color: 'rgba(255,255,255,0.8)' }}>
             Đang được chăm sóc bởi: {assignedTelesale?.username ?? 'Đang tải...'}
           </Typography>
         </Box>
+
         <Box display="flex" alignItems="center" gap={0.5} sx={{ mx: 3 }}>
-   <IconButton
-  size="small"
-  sx={{ color: 'white' }}
-  onClick={handleCallClick}
-  disabled={loadingCallLink}
-  title={callLink ? "Gọi lại cuộc trước" : "Gọi Zalo"}
->
-  {loadingCallLink ? <CircularProgress size={16} sx={{ color: 'white' }} /> : '📞'}
-</IconButton>
-
-
-
+          <IconButton
+            size="small"
+            sx={{ color: 'white' }}
+            onClick={handleCallClick}
+            disabled={loadingCallLink}
+            title={callLink ? 'Gọi lại cuộc trước' : 'Gọi Zalo'}
+          >
+            {loadingCallLink ? <CircularProgress size={16} sx={{ color: 'white' }} /> : '📞'}
+          </IconButton>
 
           <IconButton size="small" sx={{ color: 'white' }}>
             🏷️
           </IconButton>
+
           <Button
             size="small"
             onClick={() => onClose?.(userId)}
@@ -414,12 +372,7 @@ const handleCallClick = async () => {
       <Box
         flex={1}
         p={1}
-        sx={{
-          overflowY: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          background: 'linear-gradient(to bottom, #e0eafc, #cfdef3)',
-        }}
+        sx={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', background: 'linear-gradient(to bottom, #e0eafc, #cfdef3)' }}
         onScroll={handleScroll}
       >
         {loadingMore && <CircularProgress size={24} sx={{ alignSelf: 'center', mb: 1 }} />}
@@ -476,15 +429,7 @@ const handleCallClick = async () => {
       {/* Resize Handle */}
       <Box
         onMouseDown={onResizeMouseDown}
-        sx={{
-          position: 'absolute',
-          bottom: 0,
-          right: 0,
-          width: 24,
-          height: 24,
-          cursor: 'se-resize',
-          bgcolor: 'rgba(0,0,0,0.2)',
-        }}
+        sx={{ position: 'absolute', bottom: 0, right: 0, width: 24, height: 24, cursor: 'se-resize', bgcolor: 'rgba(0,0,0,0.2)' }}
       >
         <OpenWithIcon sx={{ fontSize: 20, color: '#999', pointerEvents: 'none' }} />
       </Box>

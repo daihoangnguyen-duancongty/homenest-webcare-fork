@@ -3,12 +3,17 @@ import { Box } from '@mui/material';
 import Sidebar from './../components/sidebar/Sidebar';
 import Header from '../components/Header';
 import ChatPanel from '../components/ChatPanel';
+import IncomingCallPopup from '../components/IncomingCallPopup';
 import { getCurrentUser } from '../utils/auth';
 import { fetchConversations } from './../api/adminApi';
 import { useSocketStore } from '../store/socketStore';
 import { toast } from 'react-toastify';
 
 export default function TelesaleDashboard() {
+
+  // call
+  const [incomingCall, setIncomingCall] = useState<{ guestName: string; callLink: string } | null>(null);
+  //chat
   const [openChats, setOpenChats] = useState<string[]>([]);
   const [activeModule, setActiveModule] = useState<'chat' | 'employee' | 'customer' | 'automation' | 'reports'>(
     'chat'
@@ -51,9 +56,7 @@ const getCenterPosition = () => {
   const { socket, initSocket } = useSocketStore();
   const currentUser = getCurrentUser();
 
-useEffect(() => {
-  initSocket();
-}, [initSocket]);
+
    // ---------------- Mở conversation mới nhất khi load ----------------
     useEffect(() => {
       (async () => {
@@ -68,62 +71,23 @@ useEffect(() => {
         }
       })();
     }, []);
-      //---------------- Mở cuộc gọi từ khách hàng đến crm ----------------
-useEffect(() => {
-  if (!socket) return;
-
-  socket.on("inbound_call", (data) => {
-    console.log("📞 Cuộc gọi đến:", data);
-
-    if (
-      (currentUser.role === "admin" && data.targetRole === "admin") ||
-      (currentUser.role === "telesale" && data.targetUserId === currentUser.id)
-    ) {
-      toast.info(`📞 Khách hàng ${data.guestName} đang gọi đến!`, {
-        position: "top-center",
-        autoClose: false,
-        closeOnClick: false,
-        onClick: () => {
-          window.open(data.callLink, "_blank");
-        },
-      });
-    }
-  });
-
-  return () => {
-    socket.off("inbound_call");
-  };
-}, [socket, currentUser]);
- //---------------- Lắng nghe sự kiện inbound_call từ socket (khách gọi đến crm) ----------------
+     //---------------- Lắng nghe sự kiện inbound_call từ socket (khách gọi đến crm) ----------------
 useEffect(() => {
   if (!socket) return;
 
   const handleInboundCall = (data: any) => {
-    console.log("📞 Cuộc gọi đến:", data);
+  console.log("📞 inbound_call data received:", data);
+  setIncomingCall({ guestName: data.guestName || "Khách hàng", callLink: data.callLink });
+};
 
-    if (
-      (currentUser.role === "admin" && data.targetRole === "admin") ||
-      (currentUser.role === "telesale" && data.targetUserId === currentUser.id)
-    ) {
-      toast.info(`📞 Khách hàng ${data.guestName} đang gọi đến!`, {
-        position: "top-center",
-        autoClose: false,
-        closeOnClick: false,
-        onClick: () => {
-          window.open(data.callLink, "_blank");
-        },
-      });
-    }
-  };
 
-  // 👉 Lắng nghe sự kiện inbound_call
   socket.on("inbound_call", handleInboundCall);
 
-  // 👉 Cleanup đúng kiểu
   return () => {
     socket.off("inbound_call", handleInboundCall);
   };
 }, [socket, currentUser]);
+
 
 
   return (
@@ -176,6 +140,13 @@ useEffect(() => {
             );
           })}
       </Box>
+      {incomingCall && (
+  <IncomingCallPopup
+    guestName={incomingCall.guestName}
+    callLink={incomingCall.callLink}
+    onClose={() => setIncomingCall(null)}
+  />
+)}
     </Box>
   );
 }
