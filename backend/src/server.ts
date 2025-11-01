@@ -17,6 +17,7 @@ import cartRoutes from './routes/cartRoutes';
 import zaloRoutes from './routes/zaloRoutes';
 import zaloGuestRoutes from './routes/zaloGuestRoutes';
 import stringeeRoutes from "./routes/stringeeRoutes";
+import stringeeWebhook from "./routes/stringeeWebhook";
 // Import models sử dụng đúng connection
 import UserModel from './models/User';
 // Import routes Zalo V4 User Access Token
@@ -80,6 +81,7 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/zalo', zaloRoutes);
 app.use('/api/zalo', zaloGuestRoutes);
 app.use("/api/stringee", stringeeRoutes);
+app.use("/api/stringee", stringeeWebhook);
 // -------------------- Socket.IO Setup --------------------
 const server = http.createServer(app);
 
