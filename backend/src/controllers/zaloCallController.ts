@@ -109,7 +109,7 @@ export const inboundCallController = async (req: Request, res: Response): Promis
     const guestId = `zalo_${zaloUserId}`;
     console.log("📞 Inbound call from:", guestId);
 
-    // 🔹 Tìm telesale online dựa vào lastInteraction
+    // 🔹 Tìm telesale online
     const now = new Date();
     const telesale = await User.findOne({
       role: "telesale",
@@ -124,33 +124,46 @@ export const inboundCallController = async (req: Request, res: Response): Promis
 
     // ✅ Tạo token Stringee cho telesale
     const telesaleUserId = telesale.stringeeUserId || telesale._id.toString();
-    const token = createStringeeToken(telesaleUserId);
+    const stringeeToken = createStringeeToken(telesaleUserId);
 
-    // ✅ Gọi qua Stringee
-    const callResult = await callViaStringee(guestId, telesaleUserId, token);
+    // ✅ Gọi API Stringee
+    const callResult = await callViaStringee(guestId, telesaleUserId, stringeeToken);
+
+    // 🔹 Nếu callResult thất bại hoặc không có call_id, tạo dummy link
+    const callLink =
+      callResult?.call_id
+        ? `https://admin.stringee.com/call/${callResult.call_id}`
+        : `pending-${Date.now()}`;
+
+    if (!callResult?.call_id) {
+      console.warn("⚠️ Call Stringee chưa thành công, dùng dummy callLink:", callLink);
+    } else {
+      console.log("🔗 CallLink từ Stringee:", callLink);
+    }
 
     // 💾 Lưu log vào DB
     const callLog = await CallLog.create({
       caller: guestId,
       callee: telesale._id.toString(),
-      callLink: callResult?.call_link || "",
+      callLink,
       status: "pending",
       startedAt: new Date(),
     });
 
     console.log("✅ CallLog inbound saved:", callLog._id);
 
-    // 📡 Emit realtime
+    // 📡 Emit realtime event
     io.emit("incoming_call", {
       callId: callLog._id,
       telesaleName: telesale.username || "Telesale",
       from: guestId,
       to: telesale._id,
       status: "Đang gọi...",
+      callLink,
       createdAt: callLog.createdAt,
     });
 
-    res.json({ success: true, callId: callLog._id, callResult });
+    res.json({ success: true, callId: callLog._id, callLink, callResult });
   } catch (error: any) {
     console.error("💥 inboundCallController error:", error.response?.data || error.message);
     res.status(500).json({ success: false, message: error.message });
