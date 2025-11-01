@@ -1,6 +1,8 @@
 import jwt from "jsonwebtoken";
 
 export function createStringeeToken(userId: string) {
+  console.log("🔑 STRINGEE_PROJECT_ID:", process.env.STRINGEE_PROJECT_ID);
+console.log("🔑 STRINGEE_SECRET_KEY:", process.env.STRINGEE_SECRET_KEY);
   if (!process.env.STRINGEE_PROJECT_ID || !process.env.STRINGEE_SECRET_KEY) {
     throw new Error("Missing STRINGEE_PROJECT_ID or STRINGEE_SECRET_KEY");
   }
@@ -15,8 +17,7 @@ export function createStringeeToken(userId: string) {
     userId,
     exp,
   };
-console.log("🔑 STRINGEE_PROJECT_ID:", process.env.STRINGEE_PROJECT_ID);
-console.log("🔑 STRINGEE_SECRET_KEY:", process.env.STRINGEE_SECRET_KEY);
+
 
   return jwt.sign(payload, process.env.STRINGEE_SECRET_KEY!, { algorithm: "HS256" });
 }
