@@ -1,113 +1,102 @@
 import { Request, Response } from "express";
-import axios from "axios";
 import CallLog from "../models/ZaloCall";
-import { getAccessToken } from "../services/zaloService";
-import { io } from "../server";
 import GuestUser from "../models/ZaloGuestUser";
-import UserModel from "../models/User"
-import { callViaStringee } from "../utils/callViaStringee";
-import { createStringeeToken } from "../utils/stringeeToken";
-// import { pushIncomingCall } from "../utils/pushFCM";
 import User from "../models/User";
-
-
+import { io } from "../server";
+import { createAgoraToken } from "../utils/agoraToken";
 
 const ONLINE_THRESHOLD_MS = 30 * 60 * 1000; // 30 phút
 
-// ==========================
-// 📞 GỌI TỪ CRM → KHÁCH HÀNG
-// ==========================
+// 📞 GỌI TỪ TELESALE → KHÁCH (Outbound Agora)
+
 export const createCallController = async (req: Request, res: Response): Promise<void> => {
-  console.log("🎯 Bắt đầu xử lý createCallController");
-
   try {
-    const { userId } = req.body; // đây là Mongo _id từ frontend
-    const telesale = (req as any).user;
-    console.log("📦 userId (Mongo _id):", userId, "| telesale:", telesale?._id || "system");
-
-    if (!userId) {
-      console.warn("⚠️ Thiếu userId trong body");
-      res.status(400).json({ success: false, message: "Thiếu userId" });
+    const { guestId } = req.body; // Mongo _id của khách
+    const telesale = (req as any).user; // user đã login qua middleware
+    if (!guestId) {
+      res.status(400).json({ success: false, message: "Thiếu guestId" });
       return;
     }
 
-    // 🔹 Lấy guest để lấy zaloId
-    const guest: any = await GuestUser.findById(userId);
-if (!guest?.zaloId) {
-  console.warn("⚠️ Guest chưa có zaloId, tự set zaloId bằng _id");
-  guest.zaloId = guest._id;
-  await guest.save();
-}
-
-
-console.log(`📞 Gọi API Zalo với user_id: ${guest.zaloId}`);
-
-    console.log("🔑 Đang lấy access token...");
-    const token = await getAccessToken();
-    console.log("✅ Access token lấy được:", token?.slice(0, 20) + "...");
-
-    console.log(`📞 Gọi API Zalo với user_id: ${guest.zaloId}`);
-    const zaloRes = await axios.post(
-      "https://openapi.zalo.me/v3.0/oa/call/outbound",
-      { user_id: guest.zaloId, call_type: "audio" }, // <-- dùng zaloId
-      {
-        headers: {
-          access_token: token,
-          "Content-Type": "application/json",
-        },
-        timeout: 10000,
-      }
-    );
-
-    console.log("📡 Zalo trả về:", zaloRes.data);
-    const data = zaloRes.data;
-    if (data.error !== 0) {
-      console.error("❌ Lỗi từ Zalo API:", data);
-      throw new Error(data.message || "Zalo API lỗi khi tạo cuộc gọi");
+    // 🔹 Lấy thông tin khách
+    const guest = await GuestUser.findById(guestId);
+    if (!guest) {
+      res.status(404).json({ success: false, message: "Không tìm thấy khách" });
+      return;
     }
 
-    const callLink = data.data.call_link;
-    console.log("🔗 Call link:", callLink);
+    const guestAgoraId = (guest as any).zaloId || guest._id.toString();
+    const telesaleAgoraId = telesale._id.toString();
 
-    console.log("💾 Đang ghi log vào DB...");
-    const call = await CallLog.create({
-      caller: telesale?._id || "system",
-      callee: userId,
-      callLink,
+    // 🔹 Tạo channel và token Agora
+    const channelName = `call_${Date.now()}_${telesaleAgoraId}_${guestAgoraId}`;
+    const telesaleToken = createAgoraToken(channelName, telesaleAgoraId);
+    const guestToken = createAgoraToken(channelName, guestAgoraId);
+
+    // 💾 Lưu log
+    const callLog = await CallLog.create({
+      caller: telesale._id,
+      callee: guest._id,
+      channelName,
       status: "pending",
-    });
-    console.log("✅ Đã ghi call log:", call._id);
-
-    console.log("📡 Emit sự kiện new_call...");
-    io.emit("incoming_call", {
-      callId: call._id,
-      telesaleName: telesale?.name || "Hệ thống OA",
-      userId,
-      callLink,
-      status: "Đang gọi...",
-      createdAt: call.createdAt,
+      direction: "outbound",
+      platform: "agora",
+      startedAt: new Date(),
     });
 
-    console.log("🎉 Hoàn tất createCallController!");
-    res.json({ success: true, callLink });
+    console.log("✅ Outbound callLog created:", callLog._id);
+
+    // 📡 Emit realtime đến app khách (qua socket hoặc OA nếu có)
+    io.emit(`incoming_call_${guestAgoraId}`, {
+      callId: callLog._id,
+      from: telesale._id,
+      telesaleName: telesale.name || "Telesale",
+      channelName,
+      guestToken,
+      telesaleToken,
+      appId: process.env.AGORA_APP_ID,
+      status: "Telesale đang gọi bạn...",
+      createdAt: callLog.createdAt,
+    });
+
+    // ✅ Trả về cho frontend CRM
+    res.json({
+      success: true,
+      callId: callLog._id,
+      channelName,
+      guestToken,
+      telesaleToken,
+      appId: process.env.AGORA_APP_ID,
+    });
   } catch (err: any) {
-    console.error("💥 /zalo/call/create error:", err.message);
+    console.error("💥 createCallController Agora error:", err.message);
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
 // ==========================
-// 📞 GỌI TỪ KHÁCH HÀNG → CRM
+// 📞 GỌI TỪ KHÁCH HÀNG → CRM (Inbound Agora)
 // ==========================
 export const inboundCallController = async (req: Request, res: Response): Promise<void> => {
   try {
-    const zaloUserId = req.body.zaloUserId;
+    const { zaloUserId } = req.body;
     if (!zaloUserId) {
       res.status(400).json({ success: false, message: "Thiếu zaloUserId" });
       return;
     }
 
-    const guestId = `zalo_${zaloUserId}`;
-    console.log("📞 Inbound call from:", guestId);
+    // 🔹 Kiểm tra hoặc tạo GuestUser
+    let guest = await GuestUser.findOne({ zaloId: zaloUserId });
+    if (!guest) {
+      guest = await GuestUser.create({
+        zaloId: zaloUserId,
+        name: `ZaloUser_${zaloUserId}`,
+      });
+      console.log("🆕 Tạo guest mới:", guest._id);
+    }
+
+   const guestAgoraId = (guest as any).zaloId;
+    const channelName = `call_${Date.now()}_${guestAgoraId}`;
 
     // 🔹 Tìm telesale online
     const now = new Date();
@@ -118,49 +107,54 @@ export const inboundCallController = async (req: Request, res: Response): Promis
 
     if (!telesale) {
       console.warn("⚠️ Không có telesale online");
-      res.status(404).json({ message: "Không có telesale online" });
+      res.status(404).json({ success: false, message: "Không có telesale online" });
       return;
     }
 
-    const telesaleUserId = telesale.stringeeUserId || telesale._id.toString();
-    const token = createStringeeToken(telesaleUserId);
+    const telesaleAgoraId = telesale._id.toString();
 
-    console.log(`📡 Calling Stringee: from=${guestId}, to=${telesaleUserId}`);
+    // 🔹 Tạo token Agora cho cả hai bên
+    const guestToken = createAgoraToken(channelName, guestAgoraId);
+    const telesaleToken = createAgoraToken(channelName, telesaleAgoraId);
 
-    // ✅ Gọi Stringee với payload chuẩn
-    const callResult = await callViaStringee(guestId, telesaleUserId, token);
-
-    // 🔹 Tạo callLink nếu API trả r:7
-    const callLink =
-      callResult?.call_link || `https://admin.stringee.com/call/${callResult?.call_id}`;
-
-    // 💾 Lưu vào DB
+    // 💾 Ghi log
     const callLog = await CallLog.create({
-      caller: guestId,
-      callee: telesale._id.toString(),
-      callLink,
+      caller: guest._id,
+      callee: telesale._id,
+      channelName,
       status: "pending",
+      direction: "inbound",
+      platform: "agora",
       startedAt: new Date(),
     });
 
-    console.log("✅ CallLog inbound saved:", callLog._id, "CallLink:", callLink);
-
-    // 📡 Emit realtime
+    console.log("✅ CallLog inbound saved:", callLog._id);
+const telesaleName = (telesale as any).name || "Telesale";
+    // 📡 Gửi sự kiện realtime đến CRM (telesale)
     io.emit("incoming_call", {
       callId: callLog._id,
-      telesaleName: telesale.username || "Telesale",
-      from: guestId,
-      to: telesale._id,
-      status: "Đang gọi...",
+      telesaleId: telesale._id,
+
+      from: guest._id,
+      channelName,
+      guestToken,
+      telesaleToken,
+      appId: process.env.AGORA_APP_ID,
+      status: "Khách đang gọi...",
       createdAt: callLog.createdAt,
     });
 
-    res.json({ success: true, callId: callLog._id, callLink, callResult });
+    // ✅ Trả về thông tin để client (app khách) join channel
+    res.json({
+      success: true,
+      callId: callLog._id,
+      channelName,
+      guestToken,
+      telesaleToken,
+      appId: process.env.AGORA_APP_ID,
+    });
   } catch (error: any) {
-    console.error(
-      "💥 inboundCallController error:",
-      error.response?.data || error.message
-    );
+    console.error("💥 inboundCallController error:", error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
