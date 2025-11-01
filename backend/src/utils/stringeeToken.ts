@@ -12,7 +12,7 @@ console.log("🔑 STRINGEE_SECRET_KEY:", process.env.STRINGEE_SECRET_KEY);
 
   const payload = {
     jti: `${userId}-${now}`,
-    iss: process.env.STRINGEE_PROJECT_ID,
+    iss: process.env.STRINGEE_API_KEY_SID || process.env.STRINGEE_PROJECT_ID,
     rest_api: true,
     userId,
     exp,
