@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User';
-import bcrypt from 'bcryptjs';
+
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 
@@ -86,6 +86,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       res.status(401).json({ message: 'Mật khẩu không đúng.' });
       return;
     }
+// Cập nhật lastInteraction khi telesale login
+if (user.role === 'telesale') {
+  await User.updateOne({ _id: user._id }, { $set: { lastInteraction: new Date() } });
+}
+
 
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 

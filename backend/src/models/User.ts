@@ -16,6 +16,7 @@ export interface IUser extends Document {
   };
   role: 'admin' | 'telesale';
   stringeeUserId?: string;
+    lastInteraction?: Date;
   comparePassword: (plain: string) => Promise<boolean>;
 }
 
@@ -43,6 +44,8 @@ const userSchema = new Schema<IUser>(
     },
     role: { type: String, enum: ['admin', 'telesale'], default: 'telesale' },
       stringeeUserId: { type: String, default: null },
+          // theo dõi telesale online
+    lastInteraction: { type: Date, default: null },
   },
   { timestamps: true }
 );
