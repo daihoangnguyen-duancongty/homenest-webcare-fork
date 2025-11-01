@@ -1,41 +1,22 @@
 // utils/callViaStringee.ts
 import axios from "axios";
 
-export interface StringeeCallResult {
-  r: number;
-  message: string;
-  call_id?: string;
-  [key: string]: any;
-}
-
-/**
- * Gọi Stringee từ CRM → khách hàng
- * @param fromId string - ID gọi đi (guestId)
- * @param toId string - ID telesale nhận
- * @param token string - token Stringee của telesale
- */
-export async function callViaStringee(
-  fromId: string,
-  toId: string,
-  token?: string
-): Promise<StringeeCallResult> {
+export async function callViaStringee(fromId: string, toId: string, token: string) {
   try {
-    if (!token && !process.env.STRINGEE_ACCESS_TOKEN) {
-      throw new Error("Missing Stringee token");
-    }
+    const payload = {
+      from: { type: "internal", number: fromId },
+      to: [{ type: "internal", number: toId }],
+      audio_only: true, // chỉ audio
+    };
 
     const response = await axios.post(
       "https://api.stringee.com/v1/call2/callout",
-      {
-        from: { type: "internal", number: fromId },
-        to: [{ type: "internal", number: toId }],
-      },
+      payload,
       {
         headers: {
+          "X-STRINGEE-AUTH": token,
           "Content-Type": "application/json",
-          "X-STRINGEE-AUTH": token || process.env.STRINGEE_ACCESS_TOKEN!,
         },
-        timeout: 10000,
       }
     );
 
