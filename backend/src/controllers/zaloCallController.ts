@@ -9,6 +9,10 @@ import { callViaStringee } from "../utils/callViaStringee";
 // import { pushIncomingCall } from "../utils/pushFCM";
 import User from "../models/User";
 
+
+
+const ONLINE_THRESHOLD_MS = 5 * 60 * 1000; // 5 phút
+
 // ==========================
 // 📞 GỌI TỪ CRM → KHÁCH HÀNG
 // ==========================
@@ -105,31 +109,30 @@ export const inboundCallController = async (req: Request, res: Response): Promis
     const guestId = `zalo_${zaloUserId}`;
     console.log("📞 Cuộc gọi inbound từ:", guestId);
 
-    // 🔹 Tìm telesale đang online
-    const telesale = await User.findOne({ role: "telesale", status: "online" });
+    // 🔹 Tìm telesale đang online dựa vào lastInteraction
+    const now = new Date();
+    const telesale = await User.findOne({
+      role: "telesale",
+      lastInteraction: { $gte: new Date(now.getTime() - ONLINE_THRESHOLD_MS) }
+    });
+
     if (!telesale) {
       res.status(404).json({ message: "Không có telesale online" });
       return;
     }
 
     // ✅ Lấy Stringee ID của telesale
-    let telesaleStringeeId: string;
-    if (telesale.stringeeUserId) {
-      telesaleStringeeId = telesale.stringeeUserId;
-    } else {
-      console.warn("⚠️ Telesale chưa có stringeeUserId, fallback dùng _id.");
-      telesaleStringeeId = telesale._id.toString();
-    }
+    const telesaleStringeeId = telesale.stringeeUserId || telesale._id.toString();
 
-    // ✅ Gọi thật qua Stringee
+    // ✅ Gọi qua Stringee
     const callResult = await callViaStringee(guestId, telesaleStringeeId);
     console.log("📡 Stringee phản hồi:", callResult);
 
     // 💾 Lưu log vào DB
     const callLog = await CallLog.create({
-      caller: guestId, // khách gọi vào
+      caller: guestId,               // khách gọi vào
       callee: telesale._id.toString(), // telesale nhận
-      callLink: callResult?.callLink || "", // nếu có
+      callLink: callResult?.callLink || "",
       status: "pending",
       startedAt: new Date(),
     });
