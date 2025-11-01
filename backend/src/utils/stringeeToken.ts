@@ -1,10 +1,11 @@
 import jwt from "jsonwebtoken";
 
 export function createStringeeToken(userId: string) {
-  console.log("🔑 STRINGEE_PROJECT_ID:", process.env.STRINGEE_PROJECT_ID);
-console.log("🔑 STRINGEE_SECRET_KEY:", process.env.STRINGEE_SECRET_KEY);
-  if (!process.env.STRINGEE_PROJECT_ID || !process.env.STRINGEE_SECRET_KEY) {
-    throw new Error("Missing STRINGEE_PROJECT_ID or STRINGEE_SECRET_KEY");
+  const keySid = process.env.STRINGEE_API_KEY_SID;
+  const secretKey = process.env.STRINGEE_API_SECRET_KEY;
+
+  if (!keySid || !secretKey) {
+    throw new Error("Missing STRINGEE_API_KEY_SID or STRINGEE_API_SECRET_KEY");
   }
 
   const now = Math.floor(Date.now() / 1000);
@@ -12,13 +13,11 @@ console.log("🔑 STRINGEE_SECRET_KEY:", process.env.STRINGEE_SECRET_KEY);
 
   const payload = {
     jti: `${userId}-${now}`,
-    iss: process.env.STRINGEE_API_KEY_SID || process.env.STRINGEE_PROJECT_ID,
+    iss: keySid,          // ✅ LUÔN DÙNG keySid làm issuer
     rest_api: true,
     userId,
     exp,
   };
 
-
-  return jwt.sign(payload, process.env.STRINGEE_SECRET_KEY!, { algorithm: "HS256" });
+  return jwt.sign(payload, secretKey, { algorithm: "HS256" });
 }
-
