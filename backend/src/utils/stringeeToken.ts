@@ -12,5 +12,7 @@ export function createStringeeToken(userId: string) {
     exp,
   };
 
-  return jwt.sign(payload, process.env.STRINGEE_SECRET_KEY!, { algorithm: "HS256" });
+  const token = jwt.sign(payload, process.env.STRINGEE_SECRET_KEY!, { algorithm: "HS256" });
+  console.log("🔑 Created Stringee token for userId", userId, ":", token.slice(0, 20) + "...");
+  return token;
 }
