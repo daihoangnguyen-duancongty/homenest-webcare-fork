@@ -14,7 +14,7 @@ function App() {
 
   useEffect(() => {
     initSocket();
-    return () => disconnectSocket();
+    // return () => disconnectSocket();
   }, []);
 
   const getHomeRedirect = () => {

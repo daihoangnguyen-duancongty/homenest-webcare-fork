@@ -1,27 +1,27 @@
-import Layout from "@/components/layout";
-import CartPage from "@/pages/cart";
-import CategoryDetailPage from "@/pages/catalog/category-detail";
-import CategoryListPage from "@/pages/catalog/category-list";
-import ProductDetailPage from "@/pages/catalog/product-detail";
-import HomePage from "@/pages/home";
-import ProfilePage from "@/pages/profile";
-import SearchPage from "@/pages/search";
-import { createBrowserRouter } from "react-router-dom";
-import { getBasePath } from "@/utils/zma";
-import OrdersPage from "./pages/orders";
-import ShippingAddressPage from "./pages/cart/shipping-address";
-import StationsPage from "./pages/cart/stations";
-import OrderDetailPage from "./pages/orders/detail";
-import ProfileEditorPage from "./pages/profile/editor";
+import Layout from '@/layout/index';
+import CartPage from '@/pages/cart';
+import CategoryDetailPage from '@/pages/catalog/category-detail';
+import CategoryListPage from '@/pages/catalog/category-list';
+import ProductDetailPage from '@/pages/catalog/product-detail';
+import HomePage from '@/pages/home';
+import ProfilePage from '@/pages/profile';
+import SearchPage from '@/pages/search';
+import { createBrowserRouter } from 'react-router-dom';
+import { getBasePath } from '@/utils/zma';
+import OrdersPage from './pages/orders';
+import ShippingAddressPage from './pages/cart/shipping-address';
+import StationsPage from './pages/cart/stations';
+import OrderDetailPage from './pages/orders/detail';
+import ProfileEditorPage from './pages/profile/editor';
 
 const router = createBrowserRouter(
   [
     {
-      path: "/",
+      path: '/',
       element: <Layout />,
       children: [
         {
-          path: "/",
+          path: '/',
           element: <HomePage />,
           handle: {
             logo: true,
@@ -29,71 +29,71 @@ const router = createBrowserRouter(
           },
         },
         {
-          path: "/categories",
+          path: '/categories',
           element: <CategoryListPage />,
           handle: {
-            title: "Danh mục",
+            title: 'Danh mục',
             noBack: true,
           },
         },
         {
-          path: "/orders/:status?",
+          path: '/orders/:status?',
           element: <OrdersPage />,
           handle: {
-            title: "Đơn hàng",
+            title: 'Đơn hàng',
           },
         },
         {
-          path: "/order/:id",
+          path: '/order/:id',
           element: <OrderDetailPage />,
           handle: {
-            title: "Thông tin đơn hàng",
+            title: 'Thông tin đơn hàng',
           },
         },
         {
-          path: "/cart",
+          path: '/cart',
           element: <CartPage />,
           handle: {
-            title: "Giỏ hàng",
+            title: 'Giỏ hàng',
             noBack: true,
             noFloatingCart: true,
           },
         },
         {
-          path: "/shipping-address",
+          path: '/shipping-address',
           element: <ShippingAddressPage />,
           handle: {
-            title: "Địa chỉ nhận hàng",
+            title: 'Địa chỉ nhận hàng',
             noFooter: true,
             noFloatingCart: true,
           },
         },
         {
-          path: "/stations",
+          path: '/stations',
           element: <StationsPage />,
           handle: {
-            title: "Điểm nhận hàng",
+            title: 'Điểm nhận hàng',
             noFooter: true,
           },
         },
         {
-          path: "/profile",
+          path: '/profile',
           element: <ProfilePage />,
           handle: {
             logo: true,
           },
         },
         {
-          path: "/profile/edit",
+          path: '/profile/edit',
           element: <ProfileEditorPage />,
           handle: {
-            title: "Thông tin tài khoản",
+            title: 'Thông tin tài khoản',
             noFooter: true,
             noFloatingCart: true,
           },
         },
         {
-          path: "/category/:id",
+          path: '/category/:id',
           element: <CategoryDetailPage />,
           handle: {
             search: true,
@@ -102,7 +102,7 @@ const router = createBrowserRouter(
           },
         },
         {
-          path: "/product/:id",
+          path: '/product/:id',
           element: <ProductDetailPage />,
           handle: {
             scrollRestoration: 0, // when user selects another product in related products, scroll to the top of the page
@@ -110,11 +110,11 @@ const router = createBrowserRouter(
           },
         },
         {
-          path: "/search",
+          path: '/search',
           element: <SearchPage />,
           handle: {
             search: true,
-            title: "Tìm kiếm",
+            title: 'Tìm kiếm',
             noFooter: true,
           },
         },

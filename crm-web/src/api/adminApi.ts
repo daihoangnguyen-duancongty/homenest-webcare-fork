@@ -1,9 +1,8 @@
-import type { Conversation,GuestUser } from '../types';
+import type { Conversation, GuestUser } from '../types';
 import { getToken } from '../utils/auth';
-import { BACKEND_URL } from './fetcher';
+import { BACKEND_URL } from './../config/fetchConfig';
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || `${BACKEND_URL}/api/zalo`;
-
 
 // lấy danh sách cuộc trò chuyện
 export const fetchConversations = async (): Promise<Conversation[]> => {
@@ -31,6 +30,6 @@ export const fetchGuestUsers = async (): Promise<GuestUser[]> => {
 
   return data.map((u: any) => ({
     ...u,
-    userId: u._id, 
+    userId: u._id,
   }));
 };

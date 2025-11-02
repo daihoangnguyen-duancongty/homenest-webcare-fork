@@ -14,12 +14,13 @@ import SendIcon from '@mui/icons-material/Send';
 import OpenWithIcon from '@mui/icons-material/OpenWith';
 import axios from 'axios';
 import MessageBubble from './MessageBubble';
+import OutgoingCallPopup from './CallPopup/OutgoingCallPopup';
 import { getCurrentUser, getToken } from '../utils/auth';
-import { BACKEND_URL } from '../api/fetcher';
+import { BACKEND_URL } from '../config/fetchConfig';
 import { useSocketStore } from '../store/socketStore';
 import { useChatStore } from '../store/chatStore';
 import type { UserWithOnline } from '../types/index';
-import { fetchCallLink } from './../api/zaloApi';
+import { useAgoraCall } from '../hooks/useAgoraCall';
 
 interface ChatPanelProps {
   userId: string;
@@ -51,9 +52,11 @@ export default function ChatPanel({
   sx,
   initialPosition,
 }: ChatPanelProps) {
+  // call state
   const [callStatus, setCallStatus] = useState<string | null>(null);
-  const [callLink, setCallLink] = useState<string | null>(null);
   const [loadingCallLink, setLoadingCallLink] = useState(false);
+  const [outgoingCall, setOutgoingCall] = useState(false);
+  // message state
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
   const [loadingMore, setLoadingMore] = useState(false);
@@ -104,8 +107,14 @@ export default function ChatPanel({
       }
       if (resizing) {
         setSize({
-          width: Math.max(300, resizeStartRef.current.width + (e.clientX - resizeStartRef.current.x)),
-          height: Math.max(300, resizeStartRef.current.height + (e.clientY - resizeStartRef.current.y)),
+          width: Math.max(
+            300,
+            resizeStartRef.current.width + (e.clientX - resizeStartRef.current.x)
+          ),
+          height: Math.max(
+            300,
+            resizeStartRef.current.height + (e.clientY - resizeStartRef.current.y)
+          ),
         });
       }
     };
@@ -224,42 +233,35 @@ export default function ChatPanel({
     }
   };
 
-  // ----------------- Call to Customer -----------------
+  //------ Xử lý audio cuộc gọi -> gọi  qua hook useAgoraCall ------
+
+  const { startCall, stopCall, callData, isCalling } = useAgoraCall(
+    userId,
+    role === 'telesale' ? 'telesale' : 'guest'
+  );
+
+  //----------------- Telesale call to Customer -----------------
   const handleCallClick = async () => {
-    if (!userId) return;
-    setLoadingCallLink(true);
-    setCallStatus('Đang tạo cuộc gọi...');
     try {
-      const link = await fetchCallLink(userId);
-      if (!link) throw new Error('Không thể tạo link gọi Zalo');
+      setOutgoingCall(true);
+      setCallStatus('Đang kết nối...');
+      setLoadingCallLink(true);
 
-      setCallStatus('Đang gửi tin nhắn cho khách...');
-      await axios.post(
-        `${BACKEND_URL}/api/zalo/send`,
-        { userId, text: `📞 Mời anh/chị bấm để gọi video qua Zalo: ${link}` },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      setCallStatus('Đang mở Zalo PC...');
-      const deepLink = link.replace('https://zalo.me/app/link/', 'zalo://app/link/');
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = deepLink;
-      document.body.appendChild(iframe);
-
-      setTimeout(() => {
-        window.open(link, '_blank');
-        document.body.removeChild(iframe);
-      }, 2000);
-
-      setCallLink(link);
-      setCallStatus('✅ Đã gửi link gọi Zalo cho khách hàng');
+      // 👇 Telesale / Admin gọi khách
+      if (role === 'telesale' || role === 'admin') {
+        await startCall();
+        setCallStatus('Đang gọi khách hàng...');
+      } else {
+        // 👇 Khách tự join (nói 2 chiều)
+        await startCall();
+        setCallStatus('Đang tham gia cuộc gọi...');
+      }
     } catch (err) {
+      setCallStatus('Lỗi khi bắt đầu cuộc gọi');
       console.error(err);
-      setCallStatus('❌ Lỗi khi tạo hoặc gửi link gọi Zalo!');
     } finally {
       setLoadingCallLink(false);
-      setTimeout(() => setCallStatus(null), 6000);
+      setTimeout(() => setCallStatus(null), 3000);
     }
   };
 
@@ -338,8 +340,8 @@ export default function ChatPanel({
             size="small"
             sx={{ color: 'white' }}
             onClick={handleCallClick}
-            disabled={loadingCallLink}
-            title={callLink ? 'Gọi lại cuộc trước' : 'Gọi Zalo'}
+            disabled={isCalling || loadingCallLink}
+            title={callData ? 'Gọi lại cuộc trước' : 'Gọi Zalo'}
           >
             {loadingCallLink ? <CircularProgress size={16} sx={{ color: 'white' }} /> : '📞'}
           </IconButton>
@@ -372,7 +374,12 @@ export default function ChatPanel({
       <Box
         flex={1}
         p={1}
-        sx={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', background: 'linear-gradient(to bottom, #e0eafc, #cfdef3)' }}
+        sx={{
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'linear-gradient(to bottom, #e0eafc, #cfdef3)',
+        }}
         onScroll={handleScroll}
       >
         {loadingMore && <CircularProgress size={24} sx={{ alignSelf: 'center', mb: 1 }} />}
@@ -429,10 +436,28 @@ export default function ChatPanel({
       {/* Resize Handle */}
       <Box
         onMouseDown={onResizeMouseDown}
-        sx={{ position: 'absolute', bottom: 0, right: 0, width: 24, height: 24, cursor: 'se-resize', bgcolor: 'rgba(0,0,0,0.2)' }}
+        sx={{
+          position: 'absolute',
+          bottom: 0,
+          right: 0,
+          width: 24,
+          height: 24,
+          cursor: 'se-resize',
+          bgcolor: 'rgba(0,0,0,0.2)',
+        }}
       >
         <OpenWithIcon sx={{ fontSize: 20, color: '#999', pointerEvents: 'none' }} />
       </Box>
+      {/* OutgoingCall */}
+      {outgoingCall && (
+        <OutgoingCallPopup
+          guestName={messages[0]?.username || 'Khách hàng'}
+          onCancel={() => {
+            stopCall(); // Dừng cuộc gọi Agora
+            setOutgoingCall(false); // Đóng popup
+          }}
+        />
+      )}
     </Paper>
   );
 }

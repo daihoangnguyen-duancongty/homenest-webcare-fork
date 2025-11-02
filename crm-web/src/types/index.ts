@@ -29,7 +29,7 @@ export interface Conversation {
   lastMessage: string;
 }
 export interface GuestUser {
- _id: string; // ID trong MongoDB
+  _id: string; // ID trong MongoDB
   userId: string;
   username: string;
   email?: string;
@@ -37,4 +37,12 @@ export interface GuestUser {
   isOnline?: boolean;
   lastInteraction?: string | Date;
   assignedTelesale?: string | null;
+}
+export interface CallData {
+  success?: boolean;
+  callId: string;
+  channelName: string;
+  guestToken: string;
+  telesaleToken: string;
+  appId: string;
 }

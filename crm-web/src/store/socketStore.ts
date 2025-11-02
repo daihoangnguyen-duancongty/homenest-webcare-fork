@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
-import { BACKEND_URL } from '../api/fetcher';
+import { BACKEND_URL } from './../config/fetchConfig';
 import { getToken } from '../utils/auth';
 
 interface SocketState {

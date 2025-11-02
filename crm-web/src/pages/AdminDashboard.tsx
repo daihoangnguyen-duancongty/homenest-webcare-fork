@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Box, useTheme, useMediaQuery } from '@mui/material';
 import Sidebar from './../components/sidebar/Sidebar';
 import Header from '../components/Header';
-import ChatPanel from '../components/ChatPanel';
+import ChatPanel from './../components/ChatPanel';
 import EmployeePanel from '../components/EmployeePanel';
 import IncomingCallPopup from '../components/IncomingCallPopup';
 import type { ModuleKey } from './../components/sidebar/Sidebar';
@@ -14,10 +14,10 @@ import CustomerPanel from '../components/CustomerPanel';
 import DashboardModules from '../components/DashboardModules';
 
 export default function AdminDashboard() {
-
-
   // call
-  const [incomingCall, setIncomingCall] = useState<{ guestName: string; callLink: string } | null>(null);
+  const [incomingCall, setIncomingCall] = useState<{ guestName: string; callLink: string } | null>(
+    null
+  );
   //chat
   const [openChats, setOpenChats] = useState<string[]>([]);
   const [activeChat, setActiveChat] = useState<string | null>(null);
@@ -31,29 +31,27 @@ export default function AdminDashboard() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const CHAT_DEFAULT_WIDTH = 600;
-const CHAT_DEFAULT_HEIGHT = 500;
-// vi tri ban dau cua coversation luc xuat hien
-const getCenterPosition = () => {
-  const x = window.innerWidth / 2 - CHAT_DEFAULT_WIDTH / 2;
-  const y = window.innerHeight / 2 - CHAT_DEFAULT_HEIGHT / 2;
-  return { x, y };
-};
+  const CHAT_DEFAULT_HEIGHT = 500;
+  // vi tri ban dau cua coversation luc xuat hien
+  const getCenterPosition = () => {
+    const x = window.innerWidth / 2 - CHAT_DEFAULT_WIDTH / 2;
+    const y = window.innerHeight / 2 - CHAT_DEFAULT_HEIGHT / 2;
+    return { x, y };
+  };
   // mo nhieu chat cung luc
-const handleOpenChat = (userId: string) => {
-  setOpenChats((prev) => {
-    if (!prev.includes(userId)) {
-      const lastUserId = prev[prev.length - 1];
-      const lastPos = lastUserId
-        ? chatPositions[lastUserId]
-        : getCenterPosition(); // <-- center nếu chat đầu tiên
-      const newPos = { x: lastPos.x + 20, y: lastPos.y + 20 };
-      setChatPositions((pos) => ({ ...pos, [userId]: newPos }));
-      return [...prev, userId];
-    }
-    return prev;
-  });
-  setActiveChat(userId);
-};
+  const handleOpenChat = (userId: string) => {
+    setOpenChats((prev) => {
+      if (!prev.includes(userId)) {
+        const lastUserId = prev[prev.length - 1];
+        const lastPos = lastUserId ? chatPositions[lastUserId] : getCenterPosition(); // <-- center nếu chat đầu tiên
+        const newPos = { x: lastPos.x + 20, y: lastPos.y + 20 };
+        setChatPositions((pos) => ({ ...pos, [userId]: newPos }));
+        return [...prev, userId];
+      }
+      return prev;
+    });
+    setActiveChat(userId);
+  };
 
   const handleCloseChat = (userId: string) => {
     setOpenChats((prev) => prev.filter((id) => id !== userId));
@@ -62,9 +60,7 @@ const handleOpenChat = (userId: string) => {
   const { socket, initSocket } = useSocketStore();
   const currentUser = getCurrentUser();
 
-
-
-    // ---------------- Mở conversation mới nhất khi load ----------------
+  // ---------------- Mở conversation mới nhất khi load ----------------
   useEffect(() => {
     (async () => {
       try {
@@ -78,30 +74,27 @@ const handleOpenChat = (userId: string) => {
       }
     })();
   }, []);
- //---------------- Lắng nghe sự kiện inbound_call từ socket (khách gọi đến crm) ----------------
-useEffect(() => {
-  if (!socket) return;
+  //---------------- Lắng nghe sự kiện inbound_call từ socket (khách gọi đến crm) ----------------
+  useEffect(() => {
+    if (!socket) return;
 
-  const handleInboundCall = (data: any) => {
-    console.log("📞 Cuộc gọi đến:", data);
+    const handleInboundCall = (data: any) => {
+      console.log('📞 Cuộc gọi đến:', data);
 
-    if (
-      (currentUser.role === "admin" && data.targetRole === "admin") ||
-      (currentUser.role === "telesale" && data.targetUserId === currentUser.id)
-    ) {
-      setIncomingCall({ guestName: data.guestName || "Khách hàng", callLink: data.callLink });
-    }
-  };
+      if (
+        (currentUser.role === 'admin' && data.targetRole === 'admin') ||
+        (currentUser.role === 'telesale' && data.targetUserId === currentUser.id)
+      ) {
+        setIncomingCall({ guestName: data.guestName || 'Khách hàng', callLink: data.callLink });
+      }
+    };
 
-  socket.on("inbound_call", handleInboundCall);
+    socket.on('inbound_call', handleInboundCall);
 
-  return () => {
-    socket.off("inbound_call", handleInboundCall);
-  };
-}, [socket, currentUser]);
-
- 
-
+    return () => {
+      socket.off('inbound_call', handleInboundCall);
+    };
+  }, [socket, currentUser]);
 
   return (
     <Box sx={{ display: 'flex', position: 'relative', height: '100vh', width: '100vw' }}>
@@ -130,12 +123,14 @@ useEffect(() => {
           transition: 'margin-left 0.4s',
         }}
       >
-        <DashboardModules sx={{
-      position: 'absolute',
-      top: '7vh',
-      left: '8vw' ,
-      width: '90%',
-    }}/>
+        <DashboardModules
+          sx={{
+            position: 'absolute',
+            top: '7vh',
+            left: '8vw',
+            width: '90%',
+          }}
+        />
         {activeModule === 'chat' &&
           openChats.map((userId, idx) => {
             const isActive = activeChat === userId;
@@ -144,7 +139,7 @@ useEffect(() => {
                 key={userId}
                 userId={userId}
                 role="admin"
-                  initialPosition={chatPositions[userId]}
+                initialPosition={chatPositions[userId]}
                 onClose={() => handleCloseChat(userId)}
                 onClick={() => setActiveChat(userId)} // khi click chat, set active
                 sx={{
@@ -158,20 +153,27 @@ useEffect(() => {
             );
           })}
 
-        {activeModule === 'employee' && <EmployeePanel sx={{
-      position: 'absolute',
-      top: '20vh',
-      left: '16vw' ,
-      width: '77%',
-    }}/>}
-        {activeModule === 'customer' && <CustomerPanel  sx={{
-      position: 'absolute',
-      top: '26vh',
-      left: '16vw' ,
-      width: '77%',
-    }}
-    onOpenChat={handleOpenChat} />}
-
+        {activeModule === 'employee' && (
+          <EmployeePanel
+            sx={{
+              position: 'absolute',
+              top: '20vh',
+              left: '16vw',
+              width: '77%',
+            }}
+          />
+        )}
+        {activeModule === 'customer' && (
+          <CustomerPanel
+            sx={{
+              position: 'absolute',
+              top: '26vh',
+              left: '16vw',
+              width: '77%',
+            }}
+            onOpenChat={handleOpenChat}
+          />
+        )}
       </Box>
       {/* ================= Loading overlay ================= */}
       {/* {globalLoading && (
@@ -181,12 +183,12 @@ useEffect(() => {
         </Box>
       )} */}
       {incomingCall && (
-  <IncomingCallPopup
-    guestName={incomingCall.guestName}
-    callLink={incomingCall.callLink}
-    onClose={() => setIncomingCall(null)}
-  />
-)}
+        <IncomingCallPopup
+          guestName={incomingCall.guestName}
+          callLink={incomingCall.callLink}
+          onClose={() => setIncomingCall(null)}
+        />
+      )}
     </Box>
   );
 }

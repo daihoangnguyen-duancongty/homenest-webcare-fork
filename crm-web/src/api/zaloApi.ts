@@ -1,7 +1,8 @@
 import axios from 'axios';
 import type { Message, User } from '../types';
 import { getToken } from '../utils/auth';
-import { BACKEND_URL } from './fetcher';
+import { BACKEND_URL } from './../config/fetchConfig';
+import type { CallData } from '../types';
 
 export const BASE_URL = import.meta.env.VITE_BACKEND_URL || `${BACKEND_URL}/api/zalo`;
 
@@ -51,19 +52,36 @@ export const sendMessage = async (userId: string, text: string) => {
 
 // 📞 Telesale gọi cho khách hàng
 
-export const fetchCallLink = async (userId: string): Promise<string> => {
+export const fetchCallLink = async (userId: string): Promise<CallData> => {
   const token = getToken();
   if (!userId) throw new Error('userId không hợp lệ');
+
   try {
-    const res = await axios.post<{ success: boolean; callLink: string }>(
+    const res = await axios.post<{
+      success: boolean;
+      callId: string;
+      channelName: string;
+      guestToken: string;
+      telesaleToken: string;
+      appId: string;
+      message?: string;
+    }>(
       `${BACKEND_URL}/api/zalo/call/create`,
-      { userId },
+      { guestId: userId },
       { headers: { Authorization: `Bearer ${token}` } }
     );
+
     if (res.data.success) {
-      return res.data.callLink;
+      return {
+        success: true,
+        callId: res.data.callId,
+        channelName: res.data.channelName,
+        guestToken: res.data.guestToken,
+        telesaleToken: res.data.telesaleToken,
+        appId: res.data.appId,
+      };
     } else {
-      throw new Error('Không thể tạo link gọi Zalo');
+      throw new Error(res.data.message || 'Không thể tạo link gọi Zalo');
     }
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {
@@ -74,7 +92,6 @@ export const fetchCallLink = async (userId: string): Promise<string> => {
     throw new Error('Không thể tạo link gọi Zalo');
   }
 };
-
 
 // 👥 Lấy danh sách telesale (chỉ admin)
 export const fetchTelesales = async (): Promise<User[]> => {
