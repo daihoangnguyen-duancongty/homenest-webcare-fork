@@ -4,6 +4,7 @@ import GuestUser from '../models/ZaloGuestUser';
 import User from '../models/User';
 import { io } from '../server';
 import { createAgoraToken } from '../utils/agoraToken';
+import { FRONTEND_URL } from '../config/fetchConfig';
 
 const ONLINE_THRESHOLD_MS = 30 * 60 * 1000; // 30 phút
 
@@ -30,12 +31,14 @@ export const createCallController = async (req: Request, res: Response): Promise
     const channelName = `call_${Date.now()}_${telesaleAgoraId}_${guestAgoraId}`;
     const telesaleToken = createAgoraToken(channelName, telesaleAgoraId);
     const guestToken = createAgoraToken(channelName, guestAgoraId);
-
-    // Lưu log
+    // ✅ Tạo đường link call dùng cho frontend
+    const callLink = `${FRONTEND_URL}/call/${channelName}`;
+    // 💾 Lưu log cuộc gọi
     const callLog = await CallLog.create({
       caller: telesale.id,
       callee: guest._id,
       channelName,
+      callLink,
       status: 'pending',
       direction: 'outbound',
       platform: 'agora',
