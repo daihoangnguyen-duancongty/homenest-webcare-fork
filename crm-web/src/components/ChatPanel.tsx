@@ -320,18 +320,20 @@ export default function ChatPanel({
       socket?.emit('new_message', logMsg);
     }
   };
-
+  // Bắt đầu cuộc gọi
   const handleCallClick = async () => {
     try {
       setOutgoingCall(true);
       setCallStatus('Đang kết nối...');
       setLoadingCallLink(true);
 
+      // Bắt đầu cuộc gọi
       await startCall();
 
+      // Cập nhật trạng thái sau khi join thành công
       setCallStatus('Đang gọi khách hàng...');
-      // Sau khi kết thúc cuộc gọi bình thường:
-      handleCallEnd('Cuộc gọi kết thúc thành công');
+
+      // ❌ Không gọi handleCallEnd ngay nữa
     } catch (err) {
       setCallStatus('Lỗi khi bắt đầu cuộc gọi');
       console.error(err);
@@ -340,6 +342,7 @@ export default function ChatPanel({
       setLoadingCallLink(false);
     }
   };
+
   // ----------------- Render -----------------
   return (
     <Paper

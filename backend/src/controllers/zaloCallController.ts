@@ -31,9 +31,9 @@ export const createCallController = async (req: Request, res: Response): Promise
     const channelName = `call_${Date.now()}_${telesaleAgoraId}_${guestAgoraId}`;
     const telesaleToken = createAgoraToken(channelName, telesaleAgoraId);
     const guestToken = createAgoraToken(channelName, guestAgoraId);
-    // ✅ Tạo đường link call dùng cho frontend
+
     const callLink = `${FRONTEND_URL}/call/${channelName}`;
-    // 💾 Lưu log cuộc gọi
+
     const callLog = await CallLog.create({
       caller: telesale.id,
       callee: guest._id,
@@ -45,7 +45,6 @@ export const createCallController = async (req: Request, res: Response): Promise
       startedAt: new Date(),
     });
 
-    // Emit realtime cho app khách
     io.emit(`incoming_call_${guestAgoraId}`, {
       callId: callLog._id,
       from: telesale.id,
@@ -58,6 +57,7 @@ export const createCallController = async (req: Request, res: Response): Promise
       createdAt: callLog.createdAt,
     });
 
+    // ✅ Trả thêm Agora UID cho frontend
     res.json({
       success: true,
       callId: callLog._id,
@@ -65,13 +65,14 @@ export const createCallController = async (req: Request, res: Response): Promise
       guestToken,
       telesaleToken,
       appId: process.env.AGORA_APP_ID,
+      guestAgoraId,
+      telesaleAgoraId,
     });
   } catch (err: any) {
     console.error('💥 createCallController Agora error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
-
 // 📞 Inbound call: Khách gọi vào CRM
 export const inboundCallController = async (req: Request, res: Response): Promise<void> => {
   try {
