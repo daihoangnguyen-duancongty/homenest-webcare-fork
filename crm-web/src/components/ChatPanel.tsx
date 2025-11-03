@@ -251,11 +251,13 @@ export default function ChatPanel({
   };
 
   //----------------- Telesale call to Customer -----------------
+
   // Audio call
-  const { callData, isCalling, startCall, stopCall } = useAgoraCall(
+  const { callData, isCalling, startCall, stopCall, forceStopCall } = useAgoraCall(
     userId,
     role === 'telesale' ? 'telesale' : 'guest'
   );
+
   // Thêm hàm map status -> emoji
   function getCallEmoji(status: string): string {
     const s = status.toLowerCase();
@@ -267,38 +269,55 @@ export default function ChatPanel({
     if (s.includes('bị hủy') || s.includes('cancel')) return '❌'; // hủy
     return '☎️'; // fallback
   }
-
-  // 🔹 handle call end + log message
+  // Khi kết thúc hoặc hủy call
   const handleCallEnd = async (status: string, callerName?: string) => {
-    // 🔹 reset mọi thứ về trạng thái ban đầu
-    await stopCall(); // tắt mic, rời kênh
-    setOutgoingCall(false); // ẩn popup
-    setCallStatus(null); // reset status
+    const lower = status.toLowerCase();
+    if (
+      [
+        'kết thúc',
+        'ended',
+        'ngắt kết nối',
+        'disconnect',
+        'thất bại',
+        'fail',
+        'bị hủy',
+        'cancel',
+      ].some((s) => lower.includes(s))
+    ) {
+      await forceStopCall(); // 🔹 Giải phóng mic/audio ngay lập tức
+    } else {
+      await stopCall(); // Trường hợp bình thường
+    }
+
+    setOutgoingCall(false);
+    setCallStatus(null);
 
     const emoji = getCallEmoji(status);
-
-    const logMessage: Message = {
+    const logMsg: Message = {
       _id: `${Date.now()}`,
       text: `${emoji} ${status}`,
-      username: callerName || currentUser?.username || 'Hệ thống',
-      avatar: currentUser?.avatar || '/default-avatar.png',
+      username: callerName || currentUser.username || 'Hệ thống',
+      avatar: currentUser.avatar || '/default-avatar.png',
       senderType: role === 'admin' ? 'admin' : 'telesale',
       userId: userId ?? 'unknown',
     };
 
     try {
-      const res = await axios.post<{ saved: Message }>(
+      const res = await axios.post(
         `${BACKEND_URL}/api/zalo/send`,
-        { userId, text: logMessage.text, senderType: logMessage.senderType },
+        {
+          userId,
+          text: logMsg.text,
+          senderType: logMsg.senderType,
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      const savedLogMessage = { ...res.data.saved, avatar: logMessage.avatar };
-      setMessages((prev) => [...prev, savedLogMessage]);
-      socket?.emit('new_message', savedLogMessage);
-    } catch (err) {
-      console.error('Cannot save call log:', err);
-      setMessages((prev) => [...prev, logMessage]);
-      socket?.emit('new_message', logMessage);
+      const saved = { ...res.data.saved, avatar: logMsg.avatar };
+      setMessages((prev) => [...prev, saved]);
+      socket?.emit('new_message', saved);
+    } catch {
+      setMessages((prev) => [...prev, logMsg]);
+      socket?.emit('new_message', logMsg);
     }
   };
 
@@ -497,7 +516,12 @@ export default function ChatPanel({
       {outgoingCall && (
         <OutgoingCallPopup
           guestName={firstMessage.username}
-          onCancel={() => handleCallEnd('Cuộc gọi bị hủy bởi telesale')}
+          onCancel={() => {
+            forceStopCall();
+            setOutgoingCall(false);
+            setCallStatus('Cuộc gọi bị hủy');
+            handleCallEnd('Cuộc gọi bị hủy bởi telesale');
+          }}
         />
       )}
     </Paper>
