@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Box, useTheme, useMediaQuery } from '@mui/material';
-import Sidebar from './../components/sidebar/Sidebar';
+import Sidebar from '../components/Sidebar/SidebarLayout';
 import Header from '../components/Header';
 import ChatPanel from './../components/ChatPanel';
 import EmployeePanel from '../components/EmployeePanel';
 import IncomingCallPopup from '../components/IncomingCallPopup';
-import type { ModuleKey } from './../components/sidebar/Sidebar';
+import type { ModuleKey } from '../components/Sidebar/SidebarLayout';
 import { fetchConversations } from './../api/adminApi';
 import { useSocketStore } from '../store/socketStore';
 import { getCurrentUser } from '../utils/auth';

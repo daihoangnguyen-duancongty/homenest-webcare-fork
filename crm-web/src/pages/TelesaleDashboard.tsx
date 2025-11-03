@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Box } from '@mui/material';
-import Sidebar from './../components/sidebar/Sidebar';
+import Sidebar from '../components/Sidebar/SidebarLayout';
 import Header from '../components/Header';
 import ChatPanel from './../components/ChatPanel';
 import IncomingCallPopup from '../components/IncomingCallPopup';
