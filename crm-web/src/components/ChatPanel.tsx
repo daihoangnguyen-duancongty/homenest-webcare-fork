@@ -380,7 +380,11 @@ export default function ChatPanel({
       >
         <Box display="flex" flexDirection="column" flex={1} minWidth={0}>
           <Box display="flex" alignItems="center" gap={1} minWidth={0}>
-            <Avatar src={firstMessage.avatar} sx={{ width: 32, height: 32, flexShrink: 0 }} />
+            <Avatar
+              src={firstMessage.avatar ?? '/default-avatar.png'}
+              sx={{ width: 32, height: 32, flexShrink: 0 }}
+            />
+
             <Typography>{firstMessage.username}</Typography>
           </Box>
           {/* {callStatus && (

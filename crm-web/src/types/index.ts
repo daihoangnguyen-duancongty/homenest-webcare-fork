@@ -45,6 +45,8 @@ export interface CallData {
   guestToken: string;
   telesaleToken: string;
   appId: string;
+  guestAgoraId: string; // UID của guest
+  telesaleAgoraId: string; // UID của telesale
 }
 export interface InboundCallData {
   guestName?: string;
