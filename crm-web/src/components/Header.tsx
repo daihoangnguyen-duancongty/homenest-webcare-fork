@@ -7,20 +7,20 @@ import {
   IconButton,
   Menu,
   MenuItem,
-  Box,useTheme,
-  useMediaQuery
+  Box,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import type { AppBarProps } from '@mui/material';
 
-interface HeaderProps extends AppBarProps { 
-
+interface HeaderProps extends AppBarProps {
   activeSection: string;
   isMobile?: boolean;
   isExpanded?: boolean;
 }
 
-export default function Header({ activeSection, isMobile,isExpanded, ...props }: HeaderProps) {
+export default function Header({ activeSection, isMobile, isExpanded, ...props }: HeaderProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const navigate = useNavigate();
   const theme = useTheme();
@@ -38,7 +38,7 @@ export default function Header({ activeSection, isMobile,isExpanded, ...props }:
   // Lấy user từ localStorage
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const username = user.username || 'User';
- const avatar = user.avatar || 'User';
+  const avatarUrl = user.avatar?.path || '';
   let label = '';
   switch (activeSection) {
     case 'chat':
@@ -47,7 +47,7 @@ export default function Header({ activeSection, isMobile,isExpanded, ...props }:
     case 'employee':
       label = 'Quản lý nhân viên';
       break;
-       case 'customer':
+    case 'customer':
       label = 'Quản lý khách hàng';
       break;
     case 'automation':
@@ -57,7 +57,7 @@ export default function Header({ activeSection, isMobile,isExpanded, ...props }:
       label = 'Báo cáo';
       break;
   }
-  const left = isTabletOrMobile ? 0 : (isExpanded ? 280 : 60);
+  const left = isTabletOrMobile ? 0 : isExpanded ? 280 : 60;
 
   return (
     <AppBar
@@ -65,7 +65,7 @@ export default function Header({ activeSection, isMobile,isExpanded, ...props }:
       elevation={0}
       sx={{
         top: 0,
-       left: left,
+        left: left,
         right: 0,
         height: '6.5vh',
         background: 'linear-gradient(90deg, #ffffff 0%, #f8fafc 100%)',
@@ -75,9 +75,9 @@ export default function Header({ activeSection, isMobile,isExpanded, ...props }:
         display: 'flex',
         justifyContent: 'center',
         zIndex: 1100,
-         ...props.sx, 
+        ...props.sx,
       }}
-       {...props} 
+      {...props}
     >
       <Toolbar sx={{ height: '100%', justifyContent: 'space-between', px: 4 }}>
         <Typography
@@ -104,19 +104,15 @@ export default function Header({ activeSection, isMobile,isExpanded, ...props }:
             transform: 'translateY(-50%)',
           }}
         >
-          <Box onClick={handleMenuOpen} sx={{ display:"flex", flexDirection:"row", gap:"1rem" }}>
-            <Avatar
-              alt={username}
-              src={avatar}
-              sx={{ width: 30, height: 30 }}
-            />
-          
+          <Box onClick={handleMenuOpen} sx={{ display: 'flex', flexDirection: 'row', gap: '1rem' }}>
+            <Avatar alt={username} src={avatarUrl} sx={{ width: 30, height: 30 }} />
+
             {/* Chỉ show greeting khi desktop */}
-          {!isTabletOrMobile && (
-            <Typography variant="body1" fontWeight={500}>
-              Xin chào, <strong>{username}</strong>
-            </Typography>
-          )}
+            {!isTabletOrMobile && (
+              <Typography variant="body1" fontWeight={500}>
+                Xin chào, <strong>{username}</strong>
+              </Typography>
+            )}
           </Box>
           <Menu anchorEl={anchorEl} open={!!anchorEl} onClose={handleMenuClose}>
             <MenuItem onClick={handleMenuClose}>Profile</MenuItem>
