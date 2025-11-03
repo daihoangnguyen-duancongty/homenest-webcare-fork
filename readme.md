@@ -72,7 +72,7 @@ Pass: telesale004
 
 userid:68feeca0e4931d950230f73a
 
-"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZmVlY2EwZTQ5MzFkOTUwMjMwZjczYSIsInJvbGUiOiJ0ZWxlc2FsZSIsImlhdCI6MTc2MTUzNzgyOSwiZXhwIjoxNzYyMTQyNjI5fQ.BqAJfdUBPkSsUB8ZfC85QtHxUij-w5Pzdvb5hkHsK1w",
+"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZmVlY2EwZTQ5MzFkOTUwMjMwZjczYSIsInJvbGUiOiJ0ZWxlc2FsZSIsImlhdCI6MTc2MjE0Nzk1MiwiZXhwIjoxNzYyNzUyNzUyfQ.H5_RkanD1dFAbkupVjDHtfV3dLb-2p-rSCtb-B4Yxzs",
 
 Telesale 6:
 
@@ -81,7 +81,6 @@ Pass: telesale006
 
 userid:68feecdce4931d950230f73f
 "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZmVlY2RjZTQ5MzFkOTUwMjMwZjczZiIsInJvbGUiOiJ0ZWxlc2FsZSIsImlhdCI6MTc2MTUzNzg2NCwiZXhwIjoxNzYyMTQyNjY0fQ.ZcQw7sON1P0BCe4rPh1TSz-mjetqMzqfZbDfhZg9B8c",
-
 
 ------Socket io:
 

@@ -1,26 +1,58 @@
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { MutableRefObject, useLayoutEffect, useMemo, useState } from "react";
-import toast from "react-hot-toast";
-import { UIMatch, useMatches, useNavigate } from "react-router-dom";
-import {
-  cartState,
-  cartTotalState,
-  ordersState,
-  userInfoKeyState,
-  userInfoState,
-} from "@/state";
-import { Product } from "@/types";
-import { getConfig } from "@/utils/template";
-import { authorize, createOrder, openChat } from "zmp-sdk/apis";
-import { useAtomCallback } from "jotai/utils";
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
+import { MutableRefObject, useLayoutEffect, useMemo, useState } from 'react';
+import toast from 'react-hot-toast';
+import { UIMatch, useMatches, useNavigate } from 'react-router-dom';
+import { cartState, cartTotalState, ordersState, userInfoKeyState, userInfoState } from '@/state';
+import { Product } from '@/types';
+import { getConfig } from '@/utils/template';
+import { authorize, createOrder, openChat } from 'zmp-sdk/apis';
+import { useAtomCallback } from 'jotai/utils';
+import AgoraRTC from 'agora-rtc-sdk-ng';
 
+// Hàm tham gia cuộc gọi video qua Agora
+
+let agoraClient: any = null;
+
+export function useAgoraCall() {
+  const [isCalling, setIsCalling] = useState(false);
+
+  const startCall = async (channelName: string, token: string, appId: string) => {
+    setIsCalling(true);
+    agoraClient = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+    await agoraClient.join(appId, channelName, token, null);
+
+    const localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+    await agoraClient.publish([localAudioTrack]);
+
+    agoraClient.on('user-published', async (user, mediaType) => {
+      await agoraClient.subscribe(user, mediaType);
+      if (mediaType === 'audio' && user.audioTrack) {
+        user.audioTrack.play();
+      }
+    });
+
+    return agoraClient;
+  };
+
+  const stopCall = async () => {
+    if (agoraClient) {
+      await agoraClient.leave();
+      agoraClient = null;
+    }
+    setIsCalling(false);
+  };
+
+  return { startCall, stopCall, isCalling };
+}
+
+//
 export function useRealHeight(
   element: MutableRefObject<HTMLDivElement | null>,
   defaultValue?: number
 ) {
   const [height, setHeight] = useState(defaultValue ?? 0);
   useLayoutEffect(() => {
-    if (element.current && typeof ResizeObserver !== "undefined") {
+    if (element.current && typeof ResizeObserver !== 'undefined') {
       const ro = new ResizeObserver((entries: ResizeObserverEntry[]) => {
         const [{ contentRect }] = entries;
         setHeight(contentRect.height);
@@ -31,7 +63,7 @@ export function useRealHeight(
     return () => {};
   }, [element.current]);
 
-  if (typeof ResizeObserver === "undefined") {
+  if (typeof ResizeObserver === 'undefined') {
     return -1;
   }
   return height;
@@ -49,7 +81,7 @@ export function useRequestInformation() {
     const userInfo = await getStoredUserInfo();
     if (!userInfo) {
       await authorize({
-        scopes: ["scope.userInfo", "scope.userPhonenumber"],
+        scopes: ['scope.userInfo', 'scope.userPhonenumber'],
       }).then(refreshPermissions);
       return await getStoredUserInfo();
     }
@@ -71,9 +103,7 @@ export function useAddToCart(product: Product) {
   ) => {
     setCart((cart) => {
       const newQuantity =
-        typeof quantity === "function"
-          ? quantity(currentCartItem?.quantity ?? 0)
-          : quantity;
+        typeof quantity === 'function' ? quantity(currentCartItem?.quantity ?? 0) : quantity;
       if (newQuantity <= 0) {
         cart.splice(cart.indexOf(currentCartItem!), 1);
       } else {
@@ -89,7 +119,7 @@ export function useAddToCart(product: Product) {
       return [...cart];
     });
     if (options?.toast) {
-      toast.success("Đã thêm vào giỏ hàng");
+      toast.success('Đã thêm vào giỏ hàng');
     }
   };
 
@@ -99,15 +129,15 @@ export function useAddToCart(product: Product) {
 export function useCustomerSupport() {
   return () =>
     openChat({
-      type: "oa",
+      type: 'oa',
       id: getConfig((config) => config.template.oaIDtoOpenChat),
     });
 }
 
 export function useToBeImplemented() {
   return () =>
-    toast("Chức năng dành cho các bên tích hợp phát triển...", {
-      icon: "🛠️",
+    toast('Chức năng dành cho các bên tích hợp phát triển...', {
+      icon: '🛠️',
     });
 }
 
@@ -116,14 +146,14 @@ export function useCheckout() {
   const [cart, setCart] = useAtom(cartState);
   const requestInfo = useRequestInformation();
   const navigate = useNavigate();
-  const refreshNewOrders = useSetAtom(ordersState("pending"));
+  const refreshNewOrders = useSetAtom(ordersState('pending'));
 
   return async () => {
     try {
       await requestInfo();
       await createOrder({
         amount: totalAmount,
-        desc: "Thanh toán đơn hàng",
+        desc: 'Thanh toán đơn hàng',
         item: cart.map((item) => ({
           id: item.product.id,
           name: item.product.name,
@@ -133,18 +163,16 @@ export function useCheckout() {
       });
       setCart([]);
       refreshNewOrders();
-      navigate("/orders", {
+      navigate('/orders', {
         viewTransition: true,
       });
-      toast.success("Thanh toán thành công. Cảm ơn bạn đã mua hàng!", {
-        icon: "🎉",
+      toast.success('Thanh toán thành công. Cảm ơn bạn đã mua hàng!', {
+        icon: '🎉',
         duration: 5000,
       });
     } catch (error) {
       console.warn(error);
-      toast.error(
-        "Thanh toán thất bại. Vui lòng kiểm tra nội dung lỗi bên trong Console."
-      );
+      toast.error('Thanh toán thất bại. Vui lòng kiểm tra nội dung lỗi bên trong Console.');
     }
   };
 }

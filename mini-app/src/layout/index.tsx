@@ -7,11 +7,13 @@ import { Toaster } from 'react-hot-toast';
 import { ScrollRestoration } from './../components/scroll-restoration';
 import FloatingCartPreview from './../components/floating-cart-preview';
 import IncomingCallPopup from './../components/CallPopup/IncomingCallPopup';
-
+import { useAgoraCall } from '@/hooks';
 import { socket } from '@/utils/socket';
 
 export default function Layout() {
   const [incomingCall, setIncomingCall] = useState<any>(null);
+  // ⚡ Khởi tạo hook ở đây, không trong useEffect
+  const { startCall } = useAgoraCall();
 
   useEffect(() => {
     const zaloId = window.APP_CONFIG?.zaloUserId || localStorage.getItem('zaloUserId');
@@ -57,12 +59,13 @@ export default function Layout() {
       {incomingCall && (
         <IncomingCallPopup
           telesaleName={incomingCall.telesaleName}
-          onAccept={() => {
-            // Khi khách nhận cuộc gọi
-            window.open(
-              `${window.APP_CONFIG.FRONTEND_URL}/call/${incomingCall.channelName}`,
-              '_blank'
-            );
+          callData={{
+            channelName: incomingCall.channelName,
+            guestToken: incomingCall.guestToken,
+            appId: incomingCall.appId,
+          }}
+          onAccept={async () => {
+            await startCall(incomingCall.channelName, incomingCall.guestToken, incomingCall.appId);
             setIncomingCall(null);
           }}
           onReject={() => setIncomingCall(null)}
