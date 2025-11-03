@@ -12,6 +12,7 @@ import { getCurrentUser } from '../utils/auth';
 import { toast } from 'react-toastify';
 import CustomerPanel from '../components/CustomerPanel';
 import DashboardModules from '../components/DashboardModules';
+import type { InboundCallData } from '../types/index';
 
 export default function AdminDashboard() {
   // call
@@ -57,7 +58,7 @@ export default function AdminDashboard() {
     setOpenChats((prev) => prev.filter((id) => id !== userId));
   };
   // tao socket de nhan cuộc gọi
-  const { socket, initSocket } = useSocketStore();
+  const { socket } = useSocketStore();
   const currentUser = getCurrentUser();
 
   // ---------------- Mở conversation mới nhất khi load ----------------
@@ -66,27 +67,27 @@ export default function AdminDashboard() {
       try {
         const conversations = await fetchConversations();
         if (conversations.length > 0) {
-          const latest = conversations[0]; // mặc định lấy conversation mới nhất
+          const latest = conversations[0];
           handleOpenChat(latest.userId);
         }
       } catch (err) {
         console.error('Cannot fetch conversations on load:', err);
+        toast.error('❌ Không thể tải danh sách cuộc trò chuyện');
       }
     })();
   }, []);
+
   //---------------- Lắng nghe sự kiện inbound_call từ socket (khách gọi đến crm) ----------------
   useEffect(() => {
     if (!socket) return;
 
-    const handleInboundCall = (data: any) => {
-      console.log('📞 Cuộc gọi đến:', data);
-
-      if (
-        (currentUser.role === 'admin' && data.targetRole === 'admin') ||
-        (currentUser.role === 'telesale' && data.targetUserId === currentUser.id)
-      ) {
-        setIncomingCall({ guestName: data.guestName || 'Khách hàng', callLink: data.callLink });
-      }
+    const handleInboundCall = (data: InboundCallData) => {
+      console.log('📞 inbound_call data received:', data);
+      toast.info(`📞 Cuộc gọi đến từ ${data.guestName || 'Khách hàng'}`);
+      setIncomingCall({
+        guestName: data.guestName || 'Khách hàng',
+        callLink: data.callLink,
+      });
     };
 
     socket.on('inbound_call', handleInboundCall);
@@ -136,7 +137,7 @@ export default function AdminDashboard() {
             const isActive = activeChat === userId;
             return (
               <ChatPanel
-                key={userId}
+                key={`${userId}-${idx}`}
                 userId={userId}
                 role="admin"
                 initialPosition={chatPositions[userId]}

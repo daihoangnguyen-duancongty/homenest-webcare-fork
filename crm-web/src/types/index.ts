@@ -46,3 +46,9 @@ export interface CallData {
   telesaleToken: string;
   appId: string;
 }
+export interface InboundCallData {
+  guestName?: string;
+  callLink: string;
+  targetRole?: string;
+  targetUserId?: string;
+}

@@ -17,6 +17,7 @@
     "@mui/material": "^7.3.4",
     "agora-rtc-sdk-ng": "^4.24.0",
     "axios": "^1.12.2",
+    "lottie-react": "^2.4.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-hook-form": "^7.65.0",

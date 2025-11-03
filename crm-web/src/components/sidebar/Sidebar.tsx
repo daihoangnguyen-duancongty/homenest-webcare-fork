@@ -40,10 +40,10 @@ import { BASE_URL } from './../../api/zaloApi';
 import { useSocketStore } from '../../store/socketStore';
 import type { UserOnlinePayload, NewMessagePayload } from '../../types/socket';
 import type { Message } from '../../types/index';
-import SearchBar from "./../SearchBar";
-import { Mic } from "@mui/icons-material";
-import SortFilter from "./../SortFilter";
-import LabelDialog from "../LabelDialog";
+import SearchBar from './../SearchBar';
+import { Mic } from '@mui/icons-material';
+import SortFilter from './../SortFilter';
+import LabelDialog from '../LabelDialog';
 
 export type ModuleKey = 'chat' | 'employee' | 'customer' | 'automation' | 'reports';
 
@@ -58,7 +58,7 @@ export interface SidebarProps {
 }
 
 export interface ConversationWithAssign extends Conversation {
-  label?: string; 
+  label?: string;
   isAssignMenuOpen?: boolean;
   showAssignSubmenu?: boolean;
   messages: Message[];
@@ -93,18 +93,17 @@ export default function Sidebar({
   // dùng zutand quản lý socket
   const { socket, isConnected } = useSocketStore();
   //tim kiem
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
   //sort
-  const [filter, setFilter] = useState<string>("");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [filter, setFilter] = useState<string>('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   //lable
   const [isLabelDialogOpen, setIsLabelDialogOpen] = useState(false);
-const [availableLabels, setAvailableLabels] = useState<string[]>([
-  "Khách tiềm năng",
-  "Đã mua",
-  "Quan tâm",
-]);
-
+  const [availableLabels, setAvailableLabels] = useState<string[]>([
+    'Khách tiềm năng',
+    'Đã mua',
+    'Quan tâm',
+  ]);
 
   //
   const [conversations, setConversations] = useState<ConversationWithAssign[]>([]);
@@ -118,9 +117,7 @@ const [availableLabels, setAvailableLabels] = useState<string[]>([
   const [selectedConversation, setSelectedConversation] = useState<ConversationWithAssign | null>(
     null
   );
-  const [selectedLabel, setSelectedLabel] = useState<string>(
-  selectedConversation?.label || ""
-);
+  const [selectedLabel, setSelectedLabel] = useState<string>(selectedConversation?.label || '');
 
   const [selectedTelesale, setSelectedTelesale] = useState<Telesales | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -291,18 +288,18 @@ const [availableLabels, setAvailableLabels] = useState<string[]>([
   };
   //sort
   const handleFilterChange = (value: string) => {
-    console.log("Đang lọc theo:", value);
+    console.log('Đang lọc theo:', value);
     setFilter(value);
   };
 
-  const handleSortChange = (order: "asc" | "desc") => {
-    console.log("Thay đổi sắp xếp:", order);
+  const handleSortChange = (order: 'asc' | 'desc') => {
+    console.log('Thay đổi sắp xếp:', order);
     setSortOrder(order);
   };
 
   const handleClear = () => {
-    setFilter("");
-    setSortOrder("asc");
+    setFilter('');
+    setSortOrder('asc');
   };
   //
   const allMenuItems: { key: ModuleKey; icon: ReactNode; label: string; roles: string[] }[] = [
@@ -329,16 +326,43 @@ const [availableLabels, setAvailableLabels] = useState<string[]>([
             left: 0,
             top: 0,
             height: '100vh',
-
             width: isExpanded ? 280 : 60,
-            bgcolor: '#4159c7',
-            color: 'white',
-            transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+
+            // Gradient bạc-xanh hiện đại, phong cách CRM 2025
+            bgcolor: 'transparent',
+            backgroundImage: `linear-gradient(180deg, #1a6fb3 0%, #4fa5d8 50%, #162b86 100%)`,
+            backgroundSize: 'cover',
+            backgroundRepeat: 'no-repeat',
+
+            // Text & icon màu neon trắng/cyan
+            color: '#e0f7fa',
+
+            // Animation mở rộng
+            transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease',
+
             overflow: 'hidden',
-            boxShadow: 4,
+            boxShadow: '2px 0 15px rgba(0,0,0,0.25)', // shadow sâu, hiện đại
             zIndex: 3000,
             display: 'flex',
             flexDirection: 'column',
+
+            // Glow neon nhẹ cho cạnh sidebar
+            '&:before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: '4px',
+              height: '100%',
+              background: 'linear-gradient(to bottom, #00f0ff, #00bcd4, #0091ea)',
+              boxShadow: '0 0 15px #00f0ff',
+              borderRadius: '0 4px 4px 0',
+            },
+
+            // Hover glow cho sidebar khi chuột vào
+            '&:hover': {
+              boxShadow: '4px 0 25px rgba(0,255,255,0.3)',
+            },
           }}
         >
           {/* Header + Toggle */}
@@ -348,7 +372,10 @@ const [availableLabels, setAvailableLabels] = useState<string[]>([
               display: 'flex',
               alignItems: 'center',
               justifyContent: isExpanded ? 'space-between' : 'center',
-              background: 'linear-gradient(90deg, #eef7f3, #cfd1d6)',
+              bgcolor: 'transparent',
+              backgroundImage: `linear-gradient(180deg, #c0d6e4 0%, #a0c4e8 50%, #e0f0ff 100%)`,
+              boxShadow: '0 0 20px rgba(0, 255, 255, 0.2)', // glow xanh nhẹ
+
               height: 64,
               flexShrink: 0,
             }}
@@ -471,35 +498,34 @@ const [availableLabels, setAvailableLabels] = useState<string[]>([
                   background: 'linear-gradient(90deg, #6a11cb, #2575fc)',
                 }}
               />
-              
             </Box>
           )}
-              {/* SearchBar */}
-   <div style={{ padding: 20, maxWidth: 400 }}>
-      <SearchBar
-        value={query}
-        onChange={setQuery}
-        onClear={() => setQuery("")}
-        onSearch={(val) => console.log("Search:", val)}
-        placeholder="Tìm kiếm bạn bè, tin nhắn..."
-        rightIcon={<Mic fontSize="small" />}
-        bgcolor="#f1f3f4"
-        radius={30}
-      />
-    </div>
-        <SortFilter
-        filters={[
-          { label: "Tên người dùng", value: "username" },
-          { label: "Nhãn", value: "label" },
-          { label: "Ngày tham gia", value: "joined" },
-        ]}
-        selectedFilter={filter}
-        sortOrder={sortOrder}
-        onFilterChange={handleFilterChange}
-        onSortChange={handleSortChange}
-        onClear={handleClear}
-        sx={{ maxWidth: 400 }}
-      />
+          {/* SearchBar */}
+          <div style={{ padding: 20, maxWidth: 400 }}>
+            <SearchBar
+              value={query}
+              onChange={setQuery}
+              onClear={() => setQuery('')}
+              onSearch={(val) => console.log('Search:', val)}
+              placeholder="Tìm kiếm bạn bè, tin nhắn..."
+              rightIcon={<Mic fontSize="small" />}
+              bgcolor="#f1f3f4"
+              radius={30}
+            />
+          </div>
+          <SortFilter
+            filters={[
+              { label: 'Tên người dùng', value: 'username' },
+              { label: 'Nhãn', value: 'label' },
+              { label: 'Ngày tham gia', value: 'joined' },
+            ]}
+            selectedFilter={filter}
+            sortOrder={sortOrder}
+            onFilterChange={handleFilterChange}
+            onSortChange={handleSortChange}
+            onClear={handleClear}
+            sx={{ maxWidth: 400 }}
+          />
           {/* Conversations */}
           {isExpanded && activeSection === 'chat' && (
             <Box sx={{ flex: 1, overflowY: 'auto', mt: 0.5 }} onScroll={handleScroll}>
@@ -696,22 +722,25 @@ const [availableLabels, setAvailableLabels] = useState<string[]>([
                               </MenuItem>
                               <MenuItem onClick={(e) => e.stopPropagation()}>Xóa</MenuItem>
                               <MenuItem
-  onClick={(e) => {
-    e.stopPropagation();
-    setSelectedConversation(c);
-    setIsLabelDialogOpen(true);
-    setConversations((prev) =>
-      prev.map((conv) =>
-        conv.userId === c.userId
-          ? { ...conv, isAssignMenuOpen: false, showAssignSubmenu: false }
-          : conv
-      )
-    );
-  }}
->
-  Gắn nhãn
-</MenuItem>
-
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedConversation(c);
+                                  setIsLabelDialogOpen(true);
+                                  setConversations((prev) =>
+                                    prev.map((conv) =>
+                                      conv.userId === c.userId
+                                        ? {
+                                            ...conv,
+                                            isAssignMenuOpen: false,
+                                            showAssignSubmenu: false,
+                                          }
+                                        : conv
+                                    )
+                                  );
+                                }}
+                              >
+                                Gắn nhãn
+                              </MenuItem>
                             </Paper>
                           )}
 
@@ -806,39 +835,36 @@ const [availableLabels, setAvailableLabels] = useState<string[]>([
             </DialogActions>
           </Dialog>
           {/* LabelDialog */}
-<LabelDialog
-  open={isLabelDialogOpen}
-  onClose={() => setIsLabelDialogOpen(false)}
-  selectedConversation={selectedConversation || undefined}
-  availableLabels={availableLabels}
-    selectedLabel={selectedLabel}      
-  setSelectedLabel={setSelectedLabel}
-  setAvailableLabels={setAvailableLabels}
-  onSave={(label) => {
-    if (!selectedConversation) return;
+          <LabelDialog
+            open={isLabelDialogOpen}
+            onClose={() => setIsLabelDialogOpen(false)}
+            selectedConversation={selectedConversation || undefined}
+            availableLabels={availableLabels}
+            selectedLabel={selectedLabel}
+            setSelectedLabel={setSelectedLabel}
+            setAvailableLabels={setAvailableLabels}
+            onSave={(label) => {
+              if (!selectedConversation) return;
 
-    // Cập nhật label cho conversation
-    setConversations((prev) =>
-      prev.map((conv) =>
-        conv.userId === selectedConversation.userId
-          ? { ...conv, label }
-          : conv
-      )
-    );
+              // Cập nhật label cho conversation
+              setConversations((prev) =>
+                prev.map((conv) =>
+                  conv.userId === selectedConversation.userId ? { ...conv, label } : conv
+                )
+              );
 
-    // Cập nhật availableLabels nếu chưa có
-    if (!availableLabels.includes(label)) {
-      setAvailableLabels((prev) => [...prev, label]);
-    }
+              // Cập nhật availableLabels nếu chưa có
+              if (!availableLabels.includes(label)) {
+                setAvailableLabels((prev) => [...prev, label]);
+              }
 
-    // Hiện toast
-    setToast({
-      open: true,
-      message: `✅ Đã gắn nhãn "${label}" cho ${selectedConversation.name}`,
-    });
-  }}
-/>
-
+              // Hiện toast
+              setToast({
+                open: true,
+                message: `✅ Đã gắn nhãn "${label}" cho ${selectedConversation.name}`,
+              });
+            }}
+          />
 
           {/* Snackbar */}
           <Snackbar
@@ -881,7 +907,8 @@ const [availableLabels, setAvailableLabels] = useState<string[]>([
             fullScreen={false} // bỏ fullScreen
             PaperProps={{
               sx: {
-                bgcolor: '#4159c7',
+                bgcolor: 'transparent',
+                backgroundImage: `linear-gradient(180deg, #1a6fb3 0%, #4fa5d8 50%, #162b86 100%)`,
                 color: 'white',
                 width: '90vw', // responsive width
                 maxWidth: 460, // giới hạn max width
@@ -964,19 +991,19 @@ const [availableLabels, setAvailableLabels] = useState<string[]>([
                 />
               </Box>
             )}
-     {/* SearchBar */}
-   <div style={{ padding: 20, maxWidth: 400 }}>
-      <SearchBar
-        value={query}
-        onChange={setQuery}
-        onClear={() => setQuery("")}
-        onSearch={(val) => console.log("Search:", val)}
-        placeholder="Tìm kiếm bạn bè, tin nhắn..."
-        rightIcon={<Mic fontSize="small" />}
-        bgcolor="#f1f3f4"
-        radius={30}
-      />
-    </div>
+            {/* SearchBar */}
+            <div style={{ padding: 20, maxWidth: 400 }}>
+              <SearchBar
+                value={query}
+                onChange={setQuery}
+                onClear={() => setQuery('')}
+                onSearch={(val) => console.log('Search:', val)}
+                placeholder="Tìm kiếm bạn bè, tin nhắn..."
+                rightIcon={<Mic fontSize="small" />}
+                bgcolor="#f1f3f4"
+                radius={30}
+              />
+            </div>
             {/* Conversations */}
             {mobileOpen && activeSection === 'chat' && (
               <Box
@@ -1183,22 +1210,25 @@ const [availableLabels, setAvailableLabels] = useState<string[]>([
                                 </MenuItem>
                                 <MenuItem onClick={(e) => e.stopPropagation()}>Xóa</MenuItem>
                                 <MenuItem
-  onClick={(e) => {
-    e.stopPropagation();
-    setSelectedConversation(c);
-    setIsLabelDialogOpen(true);
-    setConversations((prev) =>
-      prev.map((conv) =>
-        conv.userId === c.userId
-          ? { ...conv, isAssignMenuOpen: false, showAssignSubmenu: false }
-          : conv
-      )
-    );
-  }}
->
-  Gắn nhãn
-</MenuItem>
-
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedConversation(c);
+                                    setIsLabelDialogOpen(true);
+                                    setConversations((prev) =>
+                                      prev.map((conv) =>
+                                        conv.userId === c.userId
+                                          ? {
+                                              ...conv,
+                                              isAssignMenuOpen: false,
+                                              showAssignSubmenu: false,
+                                            }
+                                          : conv
+                                      )
+                                    );
+                                  }}
+                                >
+                                  Gắn nhãn
+                                </MenuItem>
                               </Paper>
                             )}
 
@@ -1291,40 +1321,37 @@ const [availableLabels, setAvailableLabels] = useState<string[]>([
                 </Button>
               </DialogActions>
             </Dialog>
-                {/* LabelDialog*/}
-<LabelDialog
-  open={isLabelDialogOpen}
-  onClose={() => setIsLabelDialogOpen(false)}
-  selectedConversation={selectedConversation || undefined}
-  availableLabels={availableLabels}
-  setAvailableLabels={setAvailableLabels}
-    selectedLabel={selectedLabel}
-  setSelectedLabel={setSelectedLabel}
-  onSave={(label) => {
-    if (!selectedConversation) return;
+            {/* LabelDialog*/}
+            <LabelDialog
+              open={isLabelDialogOpen}
+              onClose={() => setIsLabelDialogOpen(false)}
+              selectedConversation={selectedConversation || undefined}
+              availableLabels={availableLabels}
+              setAvailableLabels={setAvailableLabels}
+              selectedLabel={selectedLabel}
+              setSelectedLabel={setSelectedLabel}
+              onSave={(label) => {
+                if (!selectedConversation) return;
 
-    // Cập nhật label cho conversation
-    setConversations((prev) =>
-      prev.map((conv) =>
-        conv.userId === selectedConversation.userId
-          ? { ...conv, label }
-          : conv
-      )
-    );
+                // Cập nhật label cho conversation
+                setConversations((prev) =>
+                  prev.map((conv) =>
+                    conv.userId === selectedConversation.userId ? { ...conv, label } : conv
+                  )
+                );
 
-    // Cập nhật availableLabels nếu chưa có
-    if (!availableLabels.includes(label)) {
-      setAvailableLabels((prev) => [...prev, label]);
-    }
+                // Cập nhật availableLabels nếu chưa có
+                if (!availableLabels.includes(label)) {
+                  setAvailableLabels((prev) => [...prev, label]);
+                }
 
-    // Hiện toast
-    setToast({
-      open: true,
-      message: `✅ Đã gắn nhãn "${label}" cho ${selectedConversation.name}`,
-    });
-  }}
-/>
-
+                // Hiện toast
+                setToast({
+                  open: true,
+                  message: `✅ Đã gắn nhãn "${label}" cho ${selectedConversation.name}`,
+                });
+              }}
+            />
 
             {/* Snackbar */}
             <Snackbar

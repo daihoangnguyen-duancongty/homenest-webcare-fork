@@ -2,7 +2,7 @@ import type { Conversation, GuestUser } from '../types';
 import { getToken } from '../utils/auth';
 import { BACKEND_URL } from './../config/fetchConfig';
 
-const BASE_URL = import.meta.env.VITE_BACKEND_URL || `${BACKEND_URL}/api/zalo`;
+const BASE_URL = `${BACKEND_URL}/api/zalo`;
 
 // lấy danh sách cuộc trò chuyện
 export const fetchConversations = async (): Promise<Conversation[]> => {
