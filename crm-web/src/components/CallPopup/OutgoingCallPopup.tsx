@@ -58,8 +58,13 @@ export default function OutgoingCallPopup({
         <CircularProgress color="primary" size={24} sx={{ mb: 2 }} />
 
         <Box display="flex" justifyContent="center" gap={2}>
-          <Button variant="contained" color="error" startIcon={<CallEndIcon />} onClick={onCancel}>
-            Huỷ
+          <Button
+            variant="contained"
+            color="error"
+            startIcon={<CallEndIcon />}
+            onClick={() => onCancel()}
+          >
+            Kết thúc
           </Button>
         </Box>
       </Box>

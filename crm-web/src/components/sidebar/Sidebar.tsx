@@ -106,6 +106,7 @@ export default function Sidebar({
   ]);
 
   //
+  const [isSocketReady, setIsSocketReady] = useState(false);
   const [conversations, setConversations] = useState<ConversationWithAssign[]>([]);
   const [activeUser, setActiveUser] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<ModuleKey>('chat');
@@ -193,7 +194,13 @@ export default function Sidebar({
       setLoading(false);
     }
   };
-
+  // Kết nối socket sau khi đã có dữ liệu cơ bản
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+    setIsSocketReady(true);
+    console.log('🟢 Socket ready, listening to realtime events...');
+  }, [socket, isConnected]);
+  // Load conversations khi đổi role
   useEffect(() => {
     setPage(1);
     setHasMore(true);
@@ -201,7 +208,7 @@ export default function Sidebar({
   }, [role]);
   // Kết nối socket và lắng nghe sự kiện realtime -> nhan du kieu tu store zustand
   useEffect(() => {
-    if (!socket || !isConnected) return;
+    if (!isSocketReady) return;
 
     console.log('🟢 Sidebar subscribing to realtime events...');
 
@@ -237,13 +244,13 @@ export default function Sidebar({
       );
     };
 
-    socket.on('user_online', handleUserOnline);
-    socket.on('new_message', handleNewMessage);
+    socket?.on('user_online', handleUserOnline);
+    socket?.on('new_message', handleNewMessage);
 
     return () => {
       console.log('🔴 Sidebar unsubscribing from realtime events...');
-      socket.off('user_online', handleUserOnline);
-      socket.off('new_message', handleNewMessage);
+      socket?.off('user_online', handleUserOnline);
+      socket?.off('new_message', handleNewMessage);
     };
   }, [socket, isConnected, activeUser]);
 
@@ -255,7 +262,8 @@ export default function Sidebar({
     if (isMobile) setMobileOpen(false);
     // 👇 Gọi API backend để set read=true
     const token = getToken();
-    await fetch(`${BASE_URL}/messages/${c.userId}/read`, {
+
+    await fetch(`${BASE_URL}/api/zalo/messages/${c.userId}/read`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -267,14 +275,23 @@ export default function Sidebar({
     );
 
     try {
-      const res = await fetch(`/api/messages/${c.userId}`);
+      const token = getToken();
+      const res = await fetch(`${BASE_URL}/api/zalo/messages/${c.userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
       const msgs: Message[] = await res.json();
       const updatedMsgs = msgs.map((m) => ({ ...m, read: true }));
+
       setConversations((prev) =>
         prev.map((conv) => (conv.userId === c.userId ? { ...conv, messages: updatedMsgs } : conv))
       );
     } catch (err) {
-      console.error('Failed to fetch messages', err);
+      console.error('❌ Failed to fetch messages', err);
     }
   };
 

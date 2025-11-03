@@ -6,8 +6,7 @@ import { useAddToCart } from '@/hooks';
 import QuantityInput from './quantity-input';
 import { fetchZaloUserId } from '@/utils/zaloUser';
 import zmp from 'zmp-sdk';
-import { BACKEND_URL } from '@/api/fetcher';
-
+import { BACKEND_URL } from '@/config/fetchConfig';
 
 export interface ProductItemProps {
   product: Product;
@@ -23,38 +22,36 @@ export default function ProductItem(props: ProductItemProps) {
   const [uiLog, setUiLog] = useState('');
 
   useEffect(() => {
-  (async () => {
-    try {
-      const id = await fetchZaloUserId();
-      if (id) setUserId(id);
-    } catch (err) {
-      setUiLog('Không lấy được Zalo userId');
-    }
-  })();
-}, []);
-
+    (async () => {
+      try {
+        const id = await fetchZaloUserId();
+        if (id) setUserId(id);
+      } catch (err) {
+        setUiLog('Không lấy được Zalo userId');
+      }
+    })();
+  }, []);
 
   const handleOpenZaloChat = async () => {
-  try {
-    zmp.openChat({
-      type: 'oa',
-      id: props.product.userId || '2405262870078293027',
-    });
+    try {
+      zmp.openChat({
+        type: 'oa',
+        id: props.product.userId || '2405262870078293027',
+      });
 
-    // Gửi tin nhắn chứa nút 📞 Gọi tư vấn ngay
-    await fetch(`${BACKEND_URL}/api/zalo/send-call-button`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId,
-        productName: props.product.name,
-      }),
-    });
-  } catch (err: any) {
-    setUiLog('Lỗi mở chat: ' + err.message);
-  }
-};
-
+      // Gửi tin nhắn chứa nút 📞 Gọi tư vấn ngay
+      await fetch(`${BACKEND_URL}/api/zalo/send-call-button`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          productName: props.product.name,
+        }),
+      });
+    } catch (err: any) {
+      setUiLog('Lỗi mở chat: ' + err.message);
+    }
+  };
 
   return (
     <div
@@ -115,10 +112,9 @@ export default function ProductItem(props: ProductItemProps) {
                     await handleOpenZaloChat();
                   }}
                 >
-                  <Icon icon="zi-chat-solid" className="w-4 h-4 mb-0 mr-3 mb-2 text-white" />
+                  <Icon icon="zi-chat-solid" className="w-4 h-4 mb-0 mb-2 mr-3 text-white" />
                   Tư vấn
                 </Button>
-                
               </>
             ) : (
               <QuantityInput value={cartQuantity} onChange={addToCart} />

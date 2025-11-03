@@ -126,6 +126,7 @@ export default function TelesaleDashboard() {
       >
         {activeModule === 'chat' &&
           openChats.map((userId, idx) => {
+            if (!userId) return null; // tránh undefined crash
             const isActive = activeChat === userId;
             return (
               <ChatPanel
@@ -134,12 +135,12 @@ export default function TelesaleDashboard() {
                 role="telesale"
                 initialPosition={chatPositions[userId]}
                 onClose={() => handleCloseChat(userId)}
-                onClick={() => setActiveChat(userId)} // khi click chat, set active
+                onClick={() => setActiveChat(userId)}
                 sx={{
                   position: 'fixed',
                   bottom: 0,
                   right: 20 + idx * 340,
-                  zIndex: isActive ? 2000 : 1000 + idx, // z-index động
+                  zIndex: isActive ? 2000 : 1000 + idx,
                 }}
               />
             );

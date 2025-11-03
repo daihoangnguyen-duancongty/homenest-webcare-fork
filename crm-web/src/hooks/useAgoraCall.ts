@@ -71,12 +71,26 @@ export function useAgoraCall(userId: string, role: 'guest' | 'telesale' | 'admin
   const stopCall = useCallback(async () => {
     if (client) {
       try {
+        // 🔹 hủy tất cả track local (không cần gán lại mảng)
+        const localTracks = client.localTracks ?? [];
+        await Promise.all(localTracks.map((track) => track.close?.()));
+
+        // 🔹 unsubscribe tất cả remote user
+        const remoteUsers = client.remoteUsers || {};
+        Object.values(remoteUsers).forEach((user) => {
+          if (user.audioTrack) user.audioTrack.stop();
+          if (user.videoTrack) user.videoTrack.stop();
+        });
+
+        // 🔹 rời kênh
         await client.leave();
-        console.log('📞 Đã rời khỏi kênh');
+        console.log('📞 Đã rời kênh và tắt mic/audio');
       } catch (e) {
-        console.warn('⚠️ Lỗi khi leave:', e);
+        console.warn('⚠️ Lỗi khi stopCall:', e);
       }
     }
+
+    // reset state
     setClient(null);
     setCallData(null);
   }, [client]);
