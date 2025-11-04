@@ -14,7 +14,21 @@ function App() {
 
   useEffect(() => {
     initSocket();
-    return () => disconnectSocket();
+
+    // ⏱️ Thêm fallback reconnect nếu bị block trong 5s
+    const fallback = setTimeout(() => {
+      const { isConnected } = useSocketStore.getState();
+      if (!isConnected) {
+        console.warn('⚠️ Socket timeout fallback triggered, reload socket manually');
+        disconnectSocket();
+        initSocket();
+      }
+    }, 5000);
+
+    return () => {
+      clearTimeout(fallback);
+      disconnectSocket();
+    };
   }, []);
 
   const getHomeRedirect = () => {

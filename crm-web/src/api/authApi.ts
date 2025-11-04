@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { BACKEND_URL } from './fetcher';
+import { BACKEND_URL } from './../config/fetchConfig';
 
 // Base URL cho auth
 const API_URL = `${BACKEND_URL}/api/users`;
@@ -77,9 +77,6 @@ export const getTelesales = async (): Promise<Telesales[]> => {
 // ========================
 // 🔶 Employee API (CRUD)
 // ========================
-
-
-
 
 /** ✅ Lấy danh sách nhân viên (yêu cầu token) */
 export const getEmployees = async (token: string) => {

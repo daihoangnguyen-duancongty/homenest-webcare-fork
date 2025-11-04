@@ -1,6 +1,6 @@
 // src/api/chatApi.ts
 
-import { BACKEND_URL } from "./fetcher";
+import { BACKEND_URL } from '@/config/fetchConfig';
 
 export interface SendMessageResponse {
   success: boolean;

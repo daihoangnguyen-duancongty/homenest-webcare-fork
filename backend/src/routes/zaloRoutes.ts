@@ -11,9 +11,8 @@ import { authenticateToken, AuthRequest } from '../middleware/authenticateJWT';
 import { authorizeRoles } from '../middleware/authorizeRole';
 import ZaloToken from '../models/ZaloToken';
 import { createCallController } from '../controllers/zaloCallController';
-import { inboundCallController } from "../controllers/zaloCallController";
+import { inboundCallController } from '../controllers/zaloCallController';
 import { getAccessToken } from '../services/zaloService';
-
 
 const router = Router();
 const ONLINE_THRESHOLD_MS = 30 * 60 * 1000; // 30 phút
@@ -50,31 +49,31 @@ router.post('/webhook', async (req: Request, res: Response) => {
     console.log('📥 Zalo webhook payload:', payload);
 
     res.status(200).send('OK'); // trả 200 ngay
-// ✅ Xử lý khi khách bấm nút "Gọi tư vấn ngay"
-if (
-  payload?.event_name === "user_click_button" &&
-  payload?.message?.button?.payload === "CALL_NOW"
-) {
-  const sender = payload?.sender || payload?.user;
-  const zaloUserId = sender?.id;
-  if (!zaloUserId) return;
+    // ✅ Xử lý khi khách bấm nút "Gọi tư vấn ngay"
+    if (
+      payload?.event_name === 'user_click_button' &&
+      payload?.message?.button?.payload === 'CALL_NOW'
+    ) {
+      const sender = payload?.sender || payload?.user;
+      const zaloUserId = sender?.id;
+      if (!zaloUserId) return;
 
-  console.log("📞 Khách bấm 'Gọi tư vấn ngay' → tạo inbound call cho telesale");
+      console.log("📞 Khách bấm 'Gọi tư vấn ngay' → tạo inbound call cho telesale");
 
-  try {
-    // Gọi controller nội bộ để xử lý inbound call
-    await axios.post(
-      `${process.env.BACKEND_URL || "https://homenest-webcare-fork-production.up.railway.app"}/api/zalo/call/inbound`,
-      { zaloUserId }
-    );
-  } catch (err: any) {
-    console.error("❌ Lỗi gọi inboundCallController:", err.message);
-  }
+      try {
+        // Gọi controller nội bộ để xử lý inbound call
+        await axios.post(
+          `${
+            process.env.BACKEND_URL || 'https://homenest-webcare-fork-production.up.railway.app'
+          }/api/zalo/call/inbound`,
+          { zaloUserId }
+        );
+      } catch (err: any) {
+        console.error('❌ Lỗi gọi inboundCallController:', err.message);
+      }
 
-  return; // Dừng xử lý tiếp
-}
-
-
+      return; // Dừng xử lý tiếp
+    }
 
     // xử lý tinh nhắn văn bản
     const sender = payload?.sender ?? payload?.user ?? null;
@@ -87,7 +86,7 @@ if (
     const guestData = createMockUser(userId);
     const guest = await GuestUser.findOneAndUpdate(
       { _id: userId },
-      { $set: { lastInteraction: new Date() , zaloId: userId}, $setOnInsert: guestData },
+      { $set: { lastInteraction: new Date(), zaloId: userId }, $setOnInsert: guestData },
       { upsert: true, new: true }
     );
 
@@ -177,9 +176,8 @@ router.get(
             username: guest?.username || 'Khách hàng',
             avatar: guest?.avatar || 'https://ui-avatars.com/api/?name=Guest&background=random',
             isOnline: guest?.lastInteraction
-  ? Date.now() - guest.lastInteraction.getTime() < ONLINE_THRESHOLD_MS
-  : false
-,
+              ? Date.now() - guest.lastInteraction.getTime() < ONLINE_THRESHOLD_MS
+              : false,
             assignedTelesale: guest?.assignedTelesale || null,
             lastMessage: latestMessage?.text || '',
             lastSentAt: latestMessage?.sentAt || latestMessage?.createdAt,
@@ -333,27 +331,13 @@ router.get('/telesales', async (req, res) => {
   }
 });
 //=====================CAll zalo==========================
-// Gọi điện thoại zalo từ crm -> khách hàng
-router.post(
-  '/call/create',
-  async (req, res, next) => {
-    console.log('🚀 Đã nhận POST /api/zalo/call/create từ crm tới khách hàng với body:', req.body);
-    next();
-  },
-  createCallController
-);
-//Gọi điện thoại zalo từ khách hàng ->  crm 
+// Outbound call (Telesale gọi khách)
+router.post('/call/create', authenticateToken, authorizeRoles(['telesale']), createCallController);
 
-router.post(
-  '/call/inbound',
-  async (req: Request, res: Response, next: NextFunction) => {
-    console.log('🚀 Đã nhận POST /api/zalo/call/inbound từ khách hàng tới crm với body:', req.body);
-    next();
-  },
-  inboundCallController
-);
+// Inbound call (Khách gọi vào CRM)
+router.post('/call/inbound', inboundCallController);
 //route mới để gửi tin nhắn OA có nút “Gọi ngay” đến khách hàng
-router.post("/send-call-button", async (req, res) => {
+router.post('/send-call-button', async (req, res) => {
   try {
     const { userId, productName } = req.body;
     const accessToken = await getAccessToken();
@@ -362,15 +346,15 @@ router.post("/send-call-button", async (req, res) => {
       recipient: { user_id: userId },
       message: {
         attachment: {
-          type: "template",
+          type: 'template',
           payload: {
-            template_type: "button",
+            template_type: 'button',
             text: `📞 Bạn muốn gọi tư vấn ngay về sản phẩm "${productName}"?`,
             buttons: [
               {
-                title: "📞 Gọi tư vấn ngay",
-                type: "oa.query.hide", // hoặc "oa.query.show"
-                payload: "CALL_NOW",
+                title: '📞 Gọi tư vấn ngay',
+                type: 'oa.query.hide', // hoặc "oa.query.show"
+                payload: 'CALL_NOW',
               },
             ],
           },
@@ -378,27 +362,20 @@ router.post("/send-call-button", async (req, res) => {
       },
     };
 
-    const zaloRes = await axios.post(
-      "https://openapi.zalo.me/v3.0/oa/message",
-      message,
-      {
-        headers: {
-          access_token: accessToken,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const zaloRes = await axios.post('https://openapi.zalo.me/v3.0/oa/message', message, {
+      headers: {
+        access_token: accessToken,
+        'Content-Type': 'application/json',
+      },
+    });
 
-    console.log("✅ Gửi thành công nút gọi tư vấn:", zaloRes.data);
+    console.log('✅ Gửi thành công nút gọi tư vấn:', zaloRes.data);
     res.json({ success: true, data: zaloRes.data });
   } catch (err: any) {
-    console.error("❌ Lỗi gửi tin nhắn gọi tư vấn:", err.message);
+    console.error('❌ Lỗi gửi tin nhắn gọi tư vấn:', err.message);
     res.status(500).json({ success: false, message: err.message });
   }
 });
-
-
-
 
 //============================================================
 //kiểm tra Access Token & Refresh Token hiện tại mà backend lưu trong MongoDB

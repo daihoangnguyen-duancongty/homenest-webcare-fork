@@ -17,6 +17,8 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import PhoneAndroidIcon from '@mui/icons-material/PhoneAndroid';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
+import SuccessPopup from './../../components/SuccessPopup';
+import LoadingOverlay from './../../components/LoadingOverlay';
 import { useNavigate } from 'react-router-dom';
 import { registerUser } from './../../api/authApi';
 
@@ -34,12 +36,17 @@ export type FormData = {
 const schema: yup.ObjectSchema<FormData> = yup.object({
   username: yup.string().required('Vui lòng nhập họ tên'),
   email: yup.string().email('Email không hợp lệ').required('Vui lòng nhập email'),
-  phone: yup.string()
+  phone: yup
+    .string()
     .required('Vui lòng nhập số điện thoại')
     .matches(/^(0[0-9]{9})$/, 'Số điện thoại phải gồm 10 chữ số hợp lệ'),
   address: yup.string().required('Vui lòng nhập địa chỉ'),
-  password: yup.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự').required('Vui lòng nhập mật khẩu'),
-  confirmPassword: yup.string()
+  password: yup
+    .string()
+    .min(6, 'Mật khẩu phải có ít nhất 6 ký tự')
+    .required('Vui lòng nhập mật khẩu'),
+  confirmPassword: yup
+    .string()
     .oneOf([yup.ref('password')], 'Mật khẩu xác nhận không khớp')
     .required('Vui lòng nhập lại mật khẩu'),
   avatar: yup.mixed<FileList>().optional(),
@@ -49,8 +56,15 @@ export default function Signup() {
   const navigate = useNavigate();
   const [serverError, setServerError] = useState('');
   const [preview, setPreview] = useState<string | null>(null);
+  const [openSuccess, setOpenSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<FormData>({
     resolver: yupResolver(schema),
     mode: 'onChange',
   });
@@ -86,15 +100,31 @@ export default function Signup() {
       }
 
       // Debug FormData
-      for (let pair of formData.entries()) {
+      for (const pair of formData.entries()) {
         console.log(pair[0], pair[1]);
       }
 
       await registerUser(formData);
+      setOpenSuccess(true);
       navigate('/login');
-    } catch (err: any) {
-      setServerError(err.response?.data?.message || 'Đăng ký thất bại.');
+    } catch (err) {
+      if (err instanceof Error) {
+        // Nếu backend trả message trong err.message
+        setServerError(err.message);
+      } else if (typeof err === 'object' && err !== null && 'response' in err) {
+        // Kiểm tra có phải lỗi từ Axios
+        const axiosErr = err as { response?: { data?: { message?: string } } };
+        setServerError(axiosErr.response?.data?.message || 'Đăng ký thất bại.');
+      } else {
+        setServerError('Đăng ký thất bại.');
+      }
+    } finally {
+      setLoading(false); // tắt overlay
     }
+  };
+  const handlePopupClose = () => {
+    setOpenSuccess(false);
+    navigate('/login'); // ✅ điều hướng sau khi đóng popup
   };
 
   return (
@@ -131,6 +161,11 @@ export default function Signup() {
           boxShadow: '-4px 0 20px rgba(0,0,0,0.15)',
         }}
       >
+        <img
+          src="https://homenest.com.vn/wp-content/uploads/2024/12/logo-HN-final-07-1.png"
+          alt="Logo"
+          style={{ width: 100, height: 100 }}
+        />
         <Box sx={{ width: '100%' }}>
           <Typography variant="h4" fontWeight="bold" textAlign="center" mb={3}>
             Đăng ký
@@ -299,7 +334,15 @@ export default function Signup() {
             </Typography>
           </form>
         </Box>
+        {/* ✅ Overlay loading tái sử dụng */}
+        <LoadingOverlay open={loading} message="Vui lòng đợi trong giây lát..." />
       </Paper>
+      {/* ✅ Popup thành công */}
+      <SuccessPopup
+        open={openSuccess}
+        message="Đăng ký tài khoản hệ thống thành công!"
+        onClose={handlePopupClose}
+      />
     </Box>
   );
 }

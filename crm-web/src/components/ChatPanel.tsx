@@ -14,12 +14,13 @@ import SendIcon from '@mui/icons-material/Send';
 import OpenWithIcon from '@mui/icons-material/OpenWith';
 import axios from 'axios';
 import MessageBubble from './MessageBubble';
+import OutgoingCallPopup from './CallPopup/OutgoingCallPopup';
 import { getCurrentUser, getToken } from '../utils/auth';
-import { BACKEND_URL } from '../api/fetcher';
+import { BACKEND_URL } from '../config/fetchConfig';
 import { useSocketStore } from '../store/socketStore';
 import { useChatStore } from '../store/chatStore';
 import type { UserWithOnline } from '../types/index';
-import { fetchCallLink } from './../api/zaloApi';
+import { useAgoraCall } from '../hooks/useAgoraCall';
 
 interface ChatPanelProps {
   userId: string;
@@ -51,9 +52,11 @@ export default function ChatPanel({
   sx,
   initialPosition,
 }: ChatPanelProps) {
+  // call state
   const [callStatus, setCallStatus] = useState<string | null>(null);
-  const [callLink, setCallLink] = useState<string | null>(null);
   const [loadingCallLink, setLoadingCallLink] = useState(false);
+  const [outgoingCall, setOutgoingCall] = useState(false);
+  // message state
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
   const [loadingMore, setLoadingMore] = useState(false);
@@ -62,7 +65,7 @@ export default function ChatPanel({
   const currentUser = getCurrentUser();
   const token = getToken();
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const { socket } = useSocketStore();
+  const { socket, disconnectSocket } = useSocketStore();
 
   const assignedTelesale = useChatStore((state) => state.assignedTelesale[userId]);
   const setAssignedTelesaleStore = useChatStore((state) => state.setAssignedTelesale);
@@ -93,7 +96,14 @@ export default function ChatPanel({
     setResizing(true);
     resizeStartRef.current = { x: e.clientX, y: e.clientY, width: size.width, height: size.height };
   };
+  // ----------------- Cleanup socket on unmount -----------------
+  useEffect(() => {
+    return () => {
+      socket?.emit('leave', currentUser.id);
+    };
+  }, []);
 
+  // ----------------- Mouse move & up listeners -----------------
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
       if (dragging) {
@@ -104,8 +114,14 @@ export default function ChatPanel({
       }
       if (resizing) {
         setSize({
-          width: Math.max(300, resizeStartRef.current.width + (e.clientX - resizeStartRef.current.x)),
-          height: Math.max(300, resizeStartRef.current.height + (e.clientY - resizeStartRef.current.y)),
+          width: Math.max(
+            300,
+            resizeStartRef.current.width + (e.clientX - resizeStartRef.current.x)
+          ),
+          height: Math.max(
+            300,
+            resizeStartRef.current.height + (e.clientY - resizeStartRef.current.y)
+          ),
         });
       }
     };
@@ -138,6 +154,9 @@ export default function ChatPanel({
   );
 
   // ----------------- Fetch messages -----------------
+  //tạo biến fallback tránh lỗi crash khi messages[0] la undefined
+  const firstMessage = messages[0] ?? { username: 'Khách hàng', avatar: '/default-avatar.png' };
+
   const fetchMessages = useCallback(
     async (beforeId?: string) => {
       if (!userId || (!hasMore && beforeId)) return;
@@ -186,10 +205,16 @@ export default function ChatPanel({
   useEffect(() => {
     if (!socket) return;
     const handleNewMessage = (msg: Message) => {
-      setMessages((prev) => [...prev, msg]);
+      const fixedMsg = {
+        ...msg,
+        avatar: msg.avatar || '/default-avatar.png', // fallback avatar
+      };
+
+      setMessages((prev) => [...prev, fixedMsg]);
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
-      if (msg.assignedTelesale) fetchAssignedTelesale(msg.assignedTelesale);
+      if (fixedMsg.assignedTelesale) fetchAssignedTelesale(fixedMsg.assignedTelesale);
     };
+
     socket.on('new_message', handleNewMessage);
     return () => {
       socket.off('new_message', handleNewMessage);
@@ -207,9 +232,10 @@ export default function ChatPanel({
       const savedMessage: Message = {
         ...res.data.saved,
         username: currentUser.username,
-        avatar: currentUser.avatar,
+        avatar: currentUser.avatar || '/default-avatar.png', // fallback avatar
         senderType: role === 'admin' ? 'admin' : 'telesale',
       };
+
       setMessages((prev) => [...prev, savedMessage]);
       setText('');
       socket?.emit('new_message', savedMessage);
@@ -224,42 +250,96 @@ export default function ChatPanel({
     }
   };
 
-  // ----------------- Call to Customer -----------------
-  const handleCallClick = async () => {
-    if (!userId) return;
-    setLoadingCallLink(true);
-    setCallStatus('Đang tạo cuộc gọi...');
-    try {
-      const link = await fetchCallLink(userId);
-      if (!link) throw new Error('Không thể tạo link gọi Zalo');
+  //----------------- Telesale call to Customer -----------------
 
-      setCallStatus('Đang gửi tin nhắn cho khách...');
-      await axios.post(
+  // Audio call
+  const { callData, isCalling, startCall, stopCall, forceStopCall } = useAgoraCall(
+    userId,
+    role === 'telesale' ? 'telesale' : 'guest'
+  );
+
+  // Thêm hàm map status -> emoji
+  function getCallEmoji(status: string): string {
+    const s = status.toLowerCase();
+    if (s.includes('đang gọi') || s.includes('đổ chuông')) return '📲'; // đang đổ chuông
+    if (s.includes('thành công') || s.includes('connected')) return '📞'; // gọi được
+    if (s.includes('kết thúc') || s.includes('ended')) return '📴'; // kết thúc
+    if (s.includes('ngắt kết nối') || s.includes('disconnect')) return '🔕'; // ngắt kết nối
+    if (s.includes('thất bại') || s.includes('fail')) return '📵'; // thất bại
+    if (s.includes('bị hủy') || s.includes('cancel')) return '❌'; // hủy
+    return '☎️'; // fallback
+  }
+  // Khi kết thúc hoặc hủy call
+  const handleCallEnd = async (status: string, callerName?: string) => {
+    const lower = status.toLowerCase();
+    if (
+      [
+        'kết thúc',
+        'ended',
+        'ngắt kết nối',
+        'disconnect',
+        'thất bại',
+        'fail',
+        'bị hủy',
+        'cancel',
+      ].some((s) => lower.includes(s))
+    ) {
+      await forceStopCall(); // 🔹 Giải phóng mic/audio ngay lập tức
+    } else {
+      await stopCall(); // Trường hợp bình thường
+    }
+
+    setOutgoingCall(false);
+    setCallStatus(null);
+
+    const emoji = getCallEmoji(status);
+    const logMsg: Message = {
+      _id: `${Date.now()}`,
+      text: `${emoji} ${status}`,
+      username: callerName || currentUser.username || 'Hệ thống',
+      avatar: currentUser.avatar || '/default-avatar.png',
+      senderType: role === 'admin' ? 'admin' : 'telesale',
+      userId: userId ?? 'unknown',
+    };
+
+    try {
+      const res = await axios.post(
         `${BACKEND_URL}/api/zalo/send`,
-        { userId, text: `📞 Mời anh/chị bấm để gọi video qua Zalo: ${link}` },
+        {
+          userId,
+          text: logMsg.text,
+          senderType: logMsg.senderType,
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      const saved = { ...res.data.saved, avatar: logMsg.avatar };
+      setMessages((prev) => [...prev, saved]);
+      socket?.emit('new_message', saved);
+    } catch {
+      setMessages((prev) => [...prev, logMsg]);
+      socket?.emit('new_message', logMsg);
+    }
+  };
+  // Bắt đầu cuộc gọi
+  const handleCallClick = async () => {
+    try {
+      setOutgoingCall(true);
+      setCallStatus('Đang kết nối...');
+      setLoadingCallLink(true);
 
-      setCallStatus('Đang mở Zalo PC...');
-      const deepLink = link.replace('https://zalo.me/app/link/', 'zalo://app/link/');
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = deepLink;
-      document.body.appendChild(iframe);
+      // Bắt đầu cuộc gọi
+      await startCall();
 
-      setTimeout(() => {
-        window.open(link, '_blank');
-        document.body.removeChild(iframe);
-      }, 2000);
+      // Cập nhật trạng thái sau khi join thành công
+      setCallStatus('Đang gọi khách hàng...');
 
-      setCallLink(link);
-      setCallStatus('✅ Đã gửi link gọi Zalo cho khách hàng');
+      // ❌ Không gọi handleCallEnd ngay nữa
     } catch (err) {
+      setCallStatus('Lỗi khi bắt đầu cuộc gọi');
       console.error(err);
-      setCallStatus('❌ Lỗi khi tạo hoặc gửi link gọi Zalo!');
+      handleCallEnd('Cuộc gọi thất bại');
     } finally {
       setLoadingCallLink(false);
-      setTimeout(() => setCallStatus(null), 6000);
     }
   };
 
@@ -301,18 +381,13 @@ export default function ChatPanel({
         <Box display="flex" flexDirection="column" flex={1} minWidth={0}>
           <Box display="flex" alignItems="center" gap={1} minWidth={0}>
             <Avatar
-              src={messages[0]?.avatar ?? '/default-avatar.png'}
+              src={firstMessage.avatar ?? '/default-avatar.png'}
               sx={{ width: 32, height: 32, flexShrink: 0 }}
             />
-            <Typography
-              noWrap
-              fontWeight="bold"
-              sx={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}
-            >
-              {messages[0]?.username ?? 'Khách hàng'}
-            </Typography>
+
+            <Typography>{firstMessage.username}</Typography>
           </Box>
-          {callStatus && (
+          {/* {callStatus && (
             <Typography
               variant="body2"
               sx={{
@@ -327,7 +402,7 @@ export default function ChatPanel({
             >
               {callStatus}
             </Typography>
-          )}
+          )} */}
           <Typography variant="caption" sx={{ mt: 0.5, color: 'rgba(255,255,255,0.8)' }}>
             Đang được chăm sóc bởi: {assignedTelesale?.username ?? 'Đang tải...'}
           </Typography>
@@ -338,8 +413,8 @@ export default function ChatPanel({
             size="small"
             sx={{ color: 'white' }}
             onClick={handleCallClick}
-            disabled={loadingCallLink}
-            title={callLink ? 'Gọi lại cuộc trước' : 'Gọi Zalo'}
+            disabled={isCalling || loadingCallLink}
+            title={callData ? 'Gọi lại cuộc trước' : 'Gọi Zalo'}
           >
             {loadingCallLink ? <CircularProgress size={16} sx={{ color: 'white' }} /> : '📞'}
           </IconButton>
@@ -372,29 +447,32 @@ export default function ChatPanel({
       <Box
         flex={1}
         p={1}
-        sx={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', background: 'linear-gradient(to bottom, #e0eafc, #cfdef3)' }}
+        sx={{
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'linear-gradient(to bottom, #e0eafc, #cfdef3)',
+        }}
         onScroll={handleScroll}
       >
         {loadingMore && <CircularProgress size={24} sx={{ alignSelf: 'center', mb: 1 }} />}
         {messages.length === 0 ? (
           <Typography color="text.secondary">Chưa có tin nhắn nào...</Typography>
         ) : (
-          messages.map((msg) => {
-            const fromAdminOrTelesale = msg.senderType === 'admin' || msg.senderType === 'telesale';
-            const isCustomer = !fromAdminOrTelesale;
-            return (
-              <MessageBubble
-                key={msg._id}
-                text={msg.text}
-                username={msg.username}
-                avatar={msg.avatar ?? undefined}
-                fromAdmin={fromAdminOrTelesale}
-                isOnline={!!msg.isOnline}
-                align={isCustomer ? 'left' : 'right'}
-                bubbleColor={isCustomer ? '#ffffff' : '#007bff'}
-              />
-            );
-          })
+          messages.map((msg, index) => (
+            <MessageBubble
+              key={`${msg._id}-${index}`}
+              text={msg.text}
+              username={msg.username}
+              avatar={msg.avatar ?? undefined}
+              fromAdmin={msg.senderType === 'admin' || msg.senderType === 'telesale'}
+              isOnline={!!msg.isOnline}
+              align={msg.senderType === 'admin' || msg.senderType === 'telesale' ? 'right' : 'left'}
+              bubbleColor={
+                msg.senderType === 'admin' || msg.senderType === 'telesale' ? '#007bff' : '#fff'
+              }
+            />
+          ))
         )}
         <div ref={messagesEndRef} />
       </Box>
@@ -429,10 +507,30 @@ export default function ChatPanel({
       {/* Resize Handle */}
       <Box
         onMouseDown={onResizeMouseDown}
-        sx={{ position: 'absolute', bottom: 0, right: 0, width: 24, height: 24, cursor: 'se-resize', bgcolor: 'rgba(0,0,0,0.2)' }}
+        sx={{
+          position: 'absolute',
+          bottom: 0,
+          right: 0,
+          width: 24,
+          height: 24,
+          cursor: 'se-resize',
+          bgcolor: 'rgba(0,0,0,0.2)',
+        }}
       >
         <OpenWithIcon sx={{ fontSize: 20, color: '#999', pointerEvents: 'none' }} />
       </Box>
+      {/* OutgoingCall */}
+      {outgoingCall && (
+        <OutgoingCallPopup
+          guestName={firstMessage.username}
+          onCancel={() => {
+            forceStopCall();
+            setOutgoingCall(false);
+            setCallStatus('Cuộc gọi bị hủy');
+            handleCallEnd('Cuộc gọi bị hủy bởi telesale');
+          }}
+        />
+      )}
     </Paper>
   );
 }
