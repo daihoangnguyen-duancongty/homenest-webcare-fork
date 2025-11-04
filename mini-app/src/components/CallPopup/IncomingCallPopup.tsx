@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Box, Button } from 'zmp-ui';
 import { useAgoraCall } from './../../hooks';
+import AgoraRTC from "agora-rtc-sdk-ng";
 
 interface IncomingCallPopupProps {
   telesaleName?: string;
@@ -43,21 +44,40 @@ export default function IncomingCallPopup({
         </p>
         <Box className="flex justify-center gap-4">
           <Button
-            type="highlight"
-            onClick={async () => {
-              log(`🔹 Join Agora channel: ${callData.channelName}, uid: ${uid}`);
-              await startCall(
-                callData.channelName,
-                role === 'telesale' ? callData.telesaleToken || '' : callData.guestToken,
-                callData.appId,
-                uid
-              );
-              log('✅ Joined Agora successfully');
-              onAccept();
-            }}
-          >
-            Nhận
-          </Button>
+  type="highlight"
+  onClick={async () => {
+    try {
+      log(`🎤 Request mic permission...`);
+      const permission = await navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(() => true)
+        .catch(() => false);
+
+      if (!permission) {
+        log("❌ Người dùng chưa cấp quyền micro");
+        return;
+      }
+
+      // 🔹 Tạo track ngay trong gesture click để Zalo cấp quyền
+      const localTrack = await AgoraRTC.createMicrophoneAudioTrack();
+      log("🎤 Mic permission granted, joining channel...");
+
+      await startCall(
+        callData.channelName,
+        role === 'telesale' ? callData.telesaleToken || '' : callData.guestToken,
+        callData.appId,
+        uid
+      );
+
+      log("✅ Joined Agora successfully");
+      onAccept();
+    } catch (err: any) {
+      log(`❌ Không bật được micro: ${err.message}`);
+    }
+  }}
+>
+  Nhận
+</Button>
+
           <Button type="danger" onClick={onReject}>
             Từ chối
           </Button>

@@ -16,52 +16,51 @@ export default function Layout() {
     const [incomingCall, setIncomingCall] = useState<any>(null);
   const [debugLog, setDebugLog] = useState<string[]>([]);
   const { startCall } = useAgoraCall();
+  const [guestId, setGuestId] = useState<string | null>(null);
 
   const pushLog = (msg: string) => {
     setDebugLog((prev) => [...prev.slice(-49), msg]);
   };
 
-  const [guestId, setGuestId] = useState<string | null>(null);
-
-  // Lấy guestId thực tế từ backend
-useEffect(() => {
-  const fetchGuestId = async () => {
-    pushLog('🔹 Bắt đầu gọi API lấy guestId mini app...');
-
-    const { success, guestId: id, error } = await getGuestIdAPI();
-    console.log('⚡ GuestId mini app result:', { success, id, error });
-
-    if (!success || !id) {
-      pushLog(`⚠️ Không lấy được guestId: ${error}`);
-      return;
-    }
-
-    setGuestId(id);
-    pushLog(`🔹 Sử dụng guestId mini app: ${id}`);
-  };
-
-  fetchGuestId();
-}, []);
 
 
+  // 🔹 Lấy guestId thực tế từ backend
+  useEffect(() => {
+    const fetchGuestId = async () => {
+      pushLog('🔹 Bắt đầu gọi API lấy guestId mini app...');
+      const { success, guestId: id, error } = await getGuestIdAPI();
+      console.log('⚡ GuestId mini app result:', { success, id, error });
 
-useEffect(() => {
-  if (!guestId) return;
+      if (!success || !id) {
+        pushLog(`⚠️ Không lấy được guestId: ${error}`);
+        return;
+      }
 
-  pushLog(`🔹 Join socket với guestId: ${guestId}`);
-  socket.emit('join', guestId);
+      setGuestId(id);
+      pushLog(`🔹 Sử dụng guestId mini app: ${id}`);
+    };
 
-  const handleIncomingCall = (data: any) => {
-    pushLog(`📞 Incoming call: ${JSON.stringify(data)}`);
-    setIncomingCall(data);
-  };
+    fetchGuestId();
+  }, []);
 
-  socket.on(`incoming_call_${guestId}`, handleIncomingCall);
+  // 🔹 Lắng nghe socket cuộc gọi đến
+  useEffect(() => {
+    if (!guestId) return;
 
-  return () => {
-    socket.off(`incoming_call_${guestId}`, handleIncomingCall);
-  };
-}, [guestId]);
+    pushLog(`🔹 Join socket với guestId: ${guestId}`);
+    socket.emit('join', guestId);
+
+    const handleIncomingCall = (data: any) => {
+      pushLog(`📞 Incoming call: ${JSON.stringify(data)}`);
+      setIncomingCall(data);
+    };
+
+    socket.on(`incoming_call_${guestId}`, handleIncomingCall);
+
+    return () => {
+      socket.off(`incoming_call_${guestId}`, handleIncomingCall);
+    };
+  }, [guestId]);
 
 
 

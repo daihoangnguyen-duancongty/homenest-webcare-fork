@@ -15,48 +15,39 @@ let agoraClient: any = null;
 
 export function useAgoraCall() {
   const [isCalling, setIsCalling] = useState(false);
-  let agoraClient: any = null;
+  const [localTrack, setLocalTrack] = useState<any>(null);
 
-  const startCall = async (
-    channelName: string,
-    token: string,
-    appId: string,
-    uid: string | number
-  ) => {
-    setIsCalling(true);
+  const startCall = async (channelName: string, token: string, appId: string, uid: string) => {
+    try {
+      console.log("🎯 Joining Agora:", { channelName, uid });
+      await agoraClient.join(appId, channelName, token, uid);
 
-    agoraClient = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
-
-    console.log('🔹 Joining Agora with UID:', uid);
-
-    await agoraClient.join(appId, channelName, token, uid);
-
-    const localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-    await agoraClient.publish([localAudioTrack]);
-    
-agoraClient.on('user-published', async (user, mediaType) => {
-  console.log('📡 user-published', user.uid, mediaType);
-  if (mediaType === 'audio' && user.audioTrack) {
-    user.audioTrack.play();
-    console.log('🔊 Playing audio track from', user.uid);
-  }
-});
-
-
-    return agoraClient;
+      // 🔹 Mic track được tạo trực tiếp sau gesture click
+      const track = await AgoraRTC.createMicrophoneAudioTrack();
+      await agoraClient.publish([track]);
+      setLocalTrack(track);
+      setIsCalling(true);
+      console.log("🎤 Mic published successfully");
+    } catch (err) {
+      console.error("🚨 startCall error:", err);
+    }
   };
 
   const stopCall = async () => {
-    if (agoraClient) {
+    try {
+      if (localTrack) {
+        localTrack.stop();
+        localTrack.close();
+      }
       await agoraClient.leave();
-      agoraClient = null;
+      setIsCalling(false);
+    } catch (err) {
+      console.error("🚨 stopCall error:", err);
     }
-    setIsCalling(false);
   };
 
   return { startCall, stopCall, isCalling };
 }
-
 
 //
 export function useRealHeight(
