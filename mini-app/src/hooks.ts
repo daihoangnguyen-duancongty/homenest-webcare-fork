@@ -33,13 +33,15 @@ export function useAgoraCall() {
 
     const localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
     await agoraClient.publish([localAudioTrack]);
+    
+agoraClient.on('user-published', async (user, mediaType) => {
+  console.log('📡 user-published', user.uid, mediaType);
+  if (mediaType === 'audio' && user.audioTrack) {
+    user.audioTrack.play();
+    console.log('🔊 Playing audio track from', user.uid);
+  }
+});
 
-    agoraClient.on('user-published', async (user, mediaType) => {
-      await agoraClient.subscribe(user, mediaType);
-      if (mediaType === 'audio' && user.audioTrack) {
-        user.audioTrack.play();
-      }
-    });
 
     return agoraClient;
   };

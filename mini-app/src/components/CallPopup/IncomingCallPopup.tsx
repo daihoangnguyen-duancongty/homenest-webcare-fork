@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Box, Button } from 'zmp-ui';
 import { useAgoraCall } from './../../hooks';
 
@@ -24,6 +25,12 @@ export default function IncomingCallPopup({
   role = 'guest',
 }: IncomingCallPopupProps) {
   const { startCall } = useAgoraCall();
+  const [debugLog, setDebugLog] = useState<string[]>([]);
+
+ const log = (message: string) => {
+  console.log(message);
+  setDebugLog((prev) => [...prev, message]);
+};
 
   const uid = role === 'telesale' ? callData.telesaleAgoraId || '0' : callData.guestAgoraId;
 
@@ -38,23 +45,31 @@ export default function IncomingCallPopup({
           {telesaleName || 'Telesale'} đang gọi bạn...
         </p>
         <Box className="flex justify-center gap-4">
-          <Button
-            type="highlight"
-            onClick={async () => {
-              await startCall(
-                callData.channelName,
-                role === 'telesale' ? callData.telesaleToken || '' : callData.guestToken,
-                callData.appId,
-                uid
-              );
-              onAccept();
-            }}
-          >
+         <Button
+  type="highlight"
+  onClick={async () => {
+    log(`🔹 Join Agora channel: ${callData.channelName}, uid: ${uid}`);
+    await startCall(
+      callData.channelName,
+      role === 'telesale' ? callData.telesaleToken || '' : callData.guestToken,
+      callData.appId,
+      uid
+    );
+    log('✅ Joined Agora successfully');
+    onAccept();
+  }}
+>
             Nhận
           </Button>
           <Button type="danger" onClick={onReject}>
             Từ chối
           </Button>
+        </Box>
+            {/* Debug log box */}
+        <Box className="p-2 mt-2 text-left text-xs bg-gray-100 text-gray-800 max-h-40 overflow-y-auto rounded">
+          {debugLog.map((msg, idx) => (
+            <div key={idx}>{msg}</div>
+          ))}
         </Box>
       </Box>
     </Box>

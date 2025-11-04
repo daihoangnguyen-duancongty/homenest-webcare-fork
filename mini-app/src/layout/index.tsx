@@ -12,31 +12,31 @@ import { socket } from '@/utils/socket';
 
 export default function Layout() {
   const [incomingCall, setIncomingCall] = useState<any>(null);
+  const [debugLog, setDebugLog] = useState<string[]>([]);
   // ⚡ Khởi tạo hook ở đây, không trong useEffect
   const { startCall } = useAgoraCall();
-
-  useEffect(() => {
+const uid = incomingCall.telesaleAgoraId || incomingCall.guestAgoraId || '0';
+useEffect(() => {
+  let interval: number; 
+  const tryJoin = () => {
     const zaloId = window.APP_CONFIG?.zaloUserId || localStorage.getItem('zaloUserId');
+    if (zaloId) {
+      setDebugLog((prev) => [...prev, `🔹 Joining room with zaloId: ${zaloId}`]);
+      socket.emit('join', zaloId);
 
-    if (!zaloId) {
-      console.warn('⚠️ Không có zaloUserId, không join socket được.');
-      return;
+      socket.on(`incoming_call_${zaloId}`, (data) => {
+        setDebugLog((prev) => [...prev, `📞 Incoming call: ${JSON.stringify(data)}`]);
+        setIncomingCall(data);
+      });
+      clearInterval(interval);
+    } else {
+      setDebugLog((prev) => [...prev, '⚠️ Chưa có zaloUserId, thử lại sau 1s...']);
     }
+  };
+  interval = window.setInterval(tryJoin, 1000); // đảm bảo TypeScript hiểu là number
+  return () => clearInterval(interval);
+}, []);
 
-    // Tham gia phòng socket riêng của user
-    socket.emit('join', zaloId);
-
-    // Lắng nghe cuộc gọi đến
-    socket.on(`incoming_call_${zaloId}`, (data) => {
-      console.log('📞 Có cuộc gọi đến:', data);
-      setIncomingCall(data);
-    });
-
-    // Dọn dẹp khi unmount
-    return () => {
-      socket.off(`incoming_call_${zaloId}`);
-    };
-  }, []);
 
   return (
     <div className="flex flex-col w-screen h-screen bg-section text-foreground">
@@ -63,14 +63,22 @@ export default function Layout() {
             channelName: incomingCall.channelName,
             guestToken: incomingCall.guestToken,
             appId: incomingCall.appId,
+              guestAgoraId: incomingCall.guestAgoraId || '0', // ✅ thêm vào
+      telesaleAgoraId: incomingCall.telesaleAgoraId || undefined, // nếu có
+      telesaleToken: incomingCall.telesaleToken || undefined, // nếu cần
           }}
           onAccept={async () => {
-            await startCall(incomingCall.channelName, incomingCall.guestToken, incomingCall.appId);
+            await startCall(incomingCall.channelName, incomingCall.guestToken, incomingCall.appId,  uid);
             setIncomingCall(null);
           }}
           onReject={() => setIncomingCall(null)}
         />
       )}
+      <div className="fixed bottom-0 left-0 p-2 text-xs bg-gray-200 max-h-40 w-full overflow-y-auto z-50">
+  {debugLog.map((msg, idx) => (
+    <div key={idx}>{msg}</div>
+  ))}
+</div>
     </div>
   );
 }
