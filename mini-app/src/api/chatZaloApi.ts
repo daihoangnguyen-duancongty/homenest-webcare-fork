@@ -39,21 +39,12 @@ export const sendMessageAPI = async (
 /**
  * Lấy guestId thực tế của khách (để join socket và nhận call)
  */
-export const getGuestIdForMiniAppAPI = async (): Promise<GuestIdResponse> => {
+export const getGuestIdAPI = async (): Promise<GuestIdResponse> => {
   try {
-    const res = await fetch(`${BACKEND_URL}/api/zalo/guest-id-for-mini-app`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
-
-    if (!res.ok) {
-      const errData = await res.json();
-      return { success: false, error: errData.message || 'Lấy guestId thất bại' };
-    }
-
+    const res = await fetch(`${BACKEND_URL}/api/zalo/guest-id-for-mini-app`);
     const data = await res.json();
     return { success: true, guestId: data.guestId };
   } catch (err: any) {
-    return { success: false, error: err.message || 'Lỗi mạng' };
+    return { success: false, error: err.message };
   }
 };

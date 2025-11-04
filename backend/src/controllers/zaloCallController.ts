@@ -5,8 +5,26 @@ import User from '../models/User';
 import { io } from '../server';
 import { createAgoraToken } from '../utils/agoraToken';
 import { FRONTEND_URL } from '../config/fetchConfig';
+import ActiveCall from '../models/ActiveCall';
 
 const ONLINE_THRESHOLD_MS = 30 * 60 * 1000; // 30 phút
+
+// cuộc gọi đang diễn ra
+export const startCall = async (req: Request, res: Response) => {
+  const { guestId, telesaleId } = req.body;
+
+  try {
+    await ActiveCall.findOneAndUpdate(
+      { guestId, telesaleId },
+      { status: 'calling', createdAt: new Date() },
+      { upsert: true, new: true }
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ Lỗi khi bắt đầu cuộc gọi:', err);
+    res.status(500).json({ success: false, error: 'Lỗi server khi bắt đầu gọi' });
+  }
+};
 
 // 📞 Outbound call: Telesale gọi khách
 export const createCallController = async (req: Request, res: Response): Promise<void> => {

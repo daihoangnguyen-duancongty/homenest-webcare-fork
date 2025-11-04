@@ -9,7 +9,7 @@ import FloatingCartPreview from './../components/floating-cart-preview';
 import IncomingCallPopup from './../components/CallPopup/IncomingCallPopup';
 import { useAgoraCall } from '@/hooks';
 import { socket } from '@/utils/socket';
-import {getGuestIdForMiniAppAPI} from '@/api/chatZaloApi'
+import {getGuestIdAPI} from '@/api/chatZaloApi'
 
 
 export default function Layout() {
@@ -28,7 +28,7 @@ useEffect(() => {
   const fetchGuestId = async () => {
     pushLog('🔹 Bắt đầu gọi API lấy guestId mini app...');
 
-    const { success, guestId: id, error } = await getGuestIdForMiniAppAPI();
+    const { success, guestId: id, error } = await getGuestIdAPI();
     console.log('⚡ GuestId mini app result:', { success, id, error });
 
     if (!success || !id) {
