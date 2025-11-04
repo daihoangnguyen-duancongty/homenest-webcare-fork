@@ -2,6 +2,12 @@
 
 import { BACKEND_URL } from '@/config/fetchConfig';
 
+export interface GuestIdResponse {
+  success: boolean;
+  guestId?: string;
+  error?: string;
+}
+
 export interface SendMessageResponse {
   success: boolean;
   result?: { replyText?: string };
@@ -26,6 +32,27 @@ export const sendMessageAPI = async (
 
     const data = await res.json();
     return { success: data.success, result: data.result };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Lỗi mạng' };
+  }
+};
+/**
+ * Lấy guestId thực tế của khách (để join socket và nhận call)
+ */
+export const getGuestIdForMiniAppAPI = async (): Promise<GuestIdResponse> => {
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/zalo/guest-id-for-mini-app`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      return { success: false, error: errData.message || 'Lấy guestId thất bại' };
+    }
+
+    const data = await res.json();
+    return { success: true, guestId: data.guestId };
   } catch (err: any) {
     return { success: false, error: err.message || 'Lỗi mạng' };
   }

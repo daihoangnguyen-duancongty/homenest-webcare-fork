@@ -332,7 +332,7 @@ router.get('/telesales', async (req, res) => {
 });
 //=====================CAll zalo==========================
 // Outbound call (Telesale gọi khách)
-router.post('/call/create', authenticateToken, authorizeRoles(['telesale']), createCallController);
+router.post('/call/create', authenticateToken, authorizeRoles(['telesale','admin']), createCallController);
 
 // Inbound call (Khách gọi vào CRM)
 router.post('/call/inbound', inboundCallController);
