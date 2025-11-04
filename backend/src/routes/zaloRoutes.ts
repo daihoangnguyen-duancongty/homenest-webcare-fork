@@ -10,9 +10,9 @@ import { createMockUser } from '../utils/mockUser';
 import { authenticateToken, AuthRequest } from '../middleware/authenticateJWT';
 import { authorizeRoles } from '../middleware/authorizeRole';
 import ZaloToken from '../models/ZaloToken';
-import { createCallController } from '../controllers/zaloCallController';
-import { inboundCallController } from '../controllers/zaloCallController';
+import { createCallController,inboundCallController,startCall } from '../controllers/zaloCallController';
 import { getAccessToken } from '../services/zaloService';
+
 
 const router = Router();
 const ONLINE_THRESHOLD_MS = 30 * 60 * 1000; // 30 phút
@@ -336,6 +336,15 @@ router.post('/call/create', authenticateToken, authorizeRoles(['telesale','admin
 
 // Inbound call (Khách gọi vào CRM)
 router.post('/call/inbound', inboundCallController);
+
+// ✅ Thêm route mới cho startCall
+router.post(
+  '/call/start-call',
+  authenticateToken,
+  authorizeRoles(['telesale', 'admin']),
+  startCall
+);
+
 //route mới để gửi tin nhắn OA có nút “Gọi ngay” đến khách hàng
 router.post('/send-call-button', async (req, res) => {
   try {
