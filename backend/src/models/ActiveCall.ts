@@ -1,5 +1,5 @@
-// models/ActiveCall.ts
-import { Schema, model } from 'mongoose';
+import { Schema } from 'mongoose';
+import { zaloMessageDB } from '../database/connection'; 
 
 const activeCallSchema = new Schema({
   guestId: { type: String, required: true },
@@ -8,4 +8,7 @@ const activeCallSchema = new Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-export default model('ActiveCall', activeCallSchema);
+// ✅ Gắn model vào zaloMessageDB (thay vì default mongoose)
+const ActiveCall = zaloMessageDB.model('ActiveCall', activeCallSchema);
+
+export default ActiveCall;
