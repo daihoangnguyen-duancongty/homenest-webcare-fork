@@ -143,30 +143,34 @@ export const zaloWebhookController: RequestHandler = async (req, res) => {
     const senderId = payload?.sender?.id ?? payload?.user?.id;
     if (!senderId) return;
 
-    // === [1] Kiểm tra hoặc tạo mới GuestUser thật ===
+    // === [1] Lấy profile Zalo thật ===
     const profile = await fetchZaloUserDetail(senderId);
     if (!profile) {
       console.warn(`⚠️ Không fetch được profile thật cho userId=${senderId}`);
       return;
     }
 
-    const guest = await GuestUser.findOneAndUpdate(
+    // === [2] Upsert an toàn (atomic) để tránh lỗi trùng key ===
+    await GuestUser.updateOne(
       { _id: senderId },
       {
         $setOnInsert: {
           username: profile.display_name,
           avatar: profile.avatar,
           email: `${senderId}@zalo.local`,
+          createdAt: new Date(),
         },
         $set: { lastInteraction: new Date() },
       },
-      { upsert: true, new: true }
+      { upsert: true }
     );
 
-    const profileName = guest.username;
-    const profileAvatar = guest.avatar ?? null;
+    // Lấy lại thông tin guest sau khi upsert
+    const guest = await GuestUser.findById(senderId).lean();
+    const profileName = guest?.username ?? profile.display_name;
+    const profileAvatar = guest?.avatar ?? profile.avatar ?? null;
 
-    // === [2] Lưu tin nhắn từ payload ===
+    // === [3] Lưu tin nhắn từ payload ===
     const messages: Array<{
       message?: string;
       time?: number;
@@ -193,8 +197,9 @@ export const zaloWebhookController: RequestHandler = async (req, res) => {
       });
 
       const isOnline =
-        guest.lastInteraction &&
-        Date.now() - guest.lastInteraction.getTime() < ONLINE_THRESHOLD_MS;
+        guest?.lastInteraction &&
+        Date.now() - new Date(guest.lastInteraction).getTime() <
+          ONLINE_THRESHOLD_MS;
 
       // Gửi realtime tới admin
       const admins = await UserModel.find({ role: 'admin' });
@@ -211,6 +216,7 @@ export const zaloWebhookController: RequestHandler = async (req, res) => {
     console.error('❌ Zalo webhook POST unexpected error:', err);
   }
 };
+
 
 
 
