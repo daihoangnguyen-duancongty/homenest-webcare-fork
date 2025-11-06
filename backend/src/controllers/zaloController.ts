@@ -165,9 +165,10 @@ export const zaloWebhookController: RequestHandler = async (req, res) => {
       try {
         profile = await fetchZaloUserDetail(senderId);
         if (profile?.display_name) break;
-      } catch (err) {
-        console.warn(`⚠️ Thử lần ${attempt} lấy profile Zalo cho ${senderId} thất bại:`, err.message);
-      }
+      } catch (err: any) {
+  console.warn(`⚠️ Thử lần ${attempt} lấy profile Zalo cho ${senderId} thất bại:`, err.message);
+}
+
       await new Promise((r) => setTimeout(r, 500 * attempt)); // delay tăng dần
     }
 
