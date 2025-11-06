@@ -83,12 +83,26 @@ router.post('/webhook', async (req: Request, res: Response) => {
     const text = payload?.message?.text ?? '[no text]';
 
     // Upsert GuestUser với mock nếu chưa có
-    const guestData = createMockUser(userId);
-    const guest = await GuestUser.findOneAndUpdate(
-      { _id: userId },
-      { $set: { lastInteraction: new Date(), zaloId: userId }, $setOnInsert: guestData },
-      { upsert: true, new: true }
-    );
+  let guest = await GuestUser.findById(userId);
+if (!guest) {
+  const profile = await fetchZaloUserDetail(userId);
+  if (!profile) {
+    console.warn(`⚠️ Không lấy được profile Zalo cho userId=${userId}, bỏ qua`);
+    return;
+  }
+
+  guest = await GuestUser.create({
+    _id: userId,
+    username: profile.display_name,
+    avatar: profile.avatar,
+    email: `${userId}@zalo.local`,
+    lastInteraction: new Date(),
+  });
+} else {
+  guest.lastInteraction = new Date();
+  await guest.save();
+}
+
 
     const profile = await fetchZaloUserDetail(userId);
 
