@@ -8,18 +8,25 @@ export default function IncomingCallPopup({
   callerAvatar,
   onAccept,
   onReject,
+  callStatus, // 'calling' | 'connected' | 'ended'
 }: {
   callerName: string;
   callerAvatar?: string;
   onAccept: () => void;
   onReject: () => void;
+  callStatus: 'calling' | 'connected' | 'ended';
 }) {
   useEffect(() => {
+    if (callStatus !== 'calling') return;
+
     const ringtone = new Audio('/sounds/incoming-call.mp3');
     ringtone.loop = true;
     ringtone.play();
     return () => ringtone.pause();
-  }, []);
+  }, [callStatus]);
+
+  // Nếu call không còn đang gọi, không hiển thị popup
+  if (callStatus !== 'calling') return null;
 
   return (
     <Box
@@ -55,10 +62,20 @@ export default function IncomingCallPopup({
           đang gọi cho bạn...
         </Typography>
         <Box display="flex" justifyContent="center" gap={2}>
-          <Button variant="contained" color="success" startIcon={<PhoneIcon />} onClick={onAccept}>
+          <Button
+            variant="contained"
+            color="success"
+            startIcon={<PhoneIcon />}
+            onClick={onAccept}
+          >
             Trả lời
           </Button>
-          <Button variant="contained" color="error" startIcon={<CallEndIcon />} onClick={onReject}>
+          <Button
+            variant="contained"
+            color="error"
+            startIcon={<CallEndIcon />}
+            onClick={onReject}
+          >
             Từ chối
           </Button>
         </Box>
@@ -66,3 +83,4 @@ export default function IncomingCallPopup({
     </Box>
   );
 }
+

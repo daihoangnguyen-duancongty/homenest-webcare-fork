@@ -56,6 +56,9 @@ export default function ChatPanel({
   const [callStatus, setCallStatus] = useState<string | null>(null);
   const [loadingCallLink, setLoadingCallLink] = useState(false);
   const [outgoingCall, setOutgoingCall] = useState(false);
+  const [callDuration, setCallDuration] = useState<number>(0); 
+const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   // message state
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
@@ -322,6 +325,12 @@ export default function ChatPanel({
   };
   // Bắt đầu cuộc gọi
   const handleCallClick = async () => {
+    if (callTimerRef.current) {
+  clearInterval(callTimerRef.current);
+  callTimerRef.current = null;
+}
+setCallDuration(0);
+
     try {
       setOutgoingCall(true);
       setCallStatus('Đang kết nối...');
@@ -332,12 +341,23 @@ export default function ChatPanel({
 
       // Cập nhật trạng thái sau khi join thành công
       setCallStatus('Đang gọi khách hàng...');
-
+// 🟢 Bắt đầu đếm thời gian
+setCallDuration(0);
+if (callTimerRef.current) clearInterval(callTimerRef.current);
+callTimerRef.current = setInterval(() => {
+  setCallDuration((prev) => prev + 1);
+}, 1000);
       // ❌ Không gọi handleCallEnd ngay nữa
     } catch (err) {
       setCallStatus('Lỗi khi bắt đầu cuộc gọi');
       console.error(err);
       handleCallEnd('Cuộc gọi thất bại');
+      if (callTimerRef.current) {
+  clearInterval(callTimerRef.current);
+  callTimerRef.current = null;
+}
+setCallDuration(0);
+
     } finally {
       setLoadingCallLink(false);
     }
@@ -387,22 +407,29 @@ export default function ChatPanel({
 
             <Typography>{firstMessage.username}</Typography>
           </Box>
-          {/* {callStatus && (
-            <Typography
-              variant="body2"
-              sx={{
-                backgroundColor: 'rgba(255,255,255,0.9)',
-                color: '#333',
-                p: 0.5,
-                px: 1,
-                borderRadius: 1,
-                textAlign: 'center',
-                fontSize: '0.8rem',
-              }}
-            >
-              {callStatus}
-            </Typography>
-          )} */}
+         {callStatus && (
+  <Typography
+    variant="body2"
+    sx={{
+      backgroundColor: 'rgba(255,255,255,0.9)',
+      color: '#333',
+      p: 0.5,
+      px: 1,
+      borderRadius: 1,
+      textAlign: 'center',
+      fontSize: '0.8rem',
+      display: 'inline-block',
+      mt: 0.5,
+    }}
+  >
+    {callStatus.includes('Đang gọi')
+      ? `${callStatus} (${String(Math.floor(callDuration / 60)).padStart(2, '0')}:${String(
+          callDuration % 60
+        ).padStart(2, '0')})`
+      : callStatus}
+  </Typography>
+)}
+
           <Typography variant="caption" sx={{ mt: 0.5, color: 'rgba(255,255,255,0.8)' }}>
             Đang được chăm sóc bởi: {assignedTelesale?.username ?? 'Đang tải...'}
           </Typography>

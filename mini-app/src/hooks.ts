@@ -1,5 +1,5 @@
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { MutableRefObject, useLayoutEffect, useMemo, useState } from 'react';
+import { MutableRefObject, useLayoutEffect, useMemo, useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { UIMatch, useMatches, useNavigate } from 'react-router-dom';
 import { cartState, cartTotalState, ordersState, userInfoKeyState, userInfoState } from '@/state';
@@ -10,26 +10,102 @@ import { useAtomCallback } from 'jotai/utils';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 
 // Hàm tham gia cuộc gọi video qua Agora
+// 👉 Tạo type mô phỏng cho Agora client
+type IAgoraRTCClient = ReturnType<typeof AgoraRTC.createClient>;
+type IRemoteUser = { uid: string | number; audioTrack?: any; videoTrack?: any };
 
 let agoraClient: any = null;
 
 export function useAgoraCall() {
+  const clientRef = useRef<IAgoraRTCClient | null>(null);
   const [isCalling, setIsCalling] = useState(false);
   const [localTrack, setLocalTrack] = useState<any>(null);
 
-  const startCall = async (channelName: string, token: string, appId: string, uid: string) => {
-    try {
-      console.log("🎯 Joining Agora:", { channelName, uid });
-      await agoraClient.join(appId, channelName, token, uid);
+  const log = (...args: any[]) => console.log("[AGORA]", ...args);
 
-      // 🔹 Mic track được tạo trực tiếp sau gesture click
-      const track = await AgoraRTC.createMicrophoneAudioTrack();
-      await agoraClient.publish([track]);
-      setLocalTrack(track);
+  const startCall = async (channelName: string, token: string, appId: string, uid: string | number) => {
+    try {
+      log("🎯 Joining Agora:", { channelName, uid });
+
+      if (!clientRef.current) {
+        clientRef.current = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+      }
+      const client = clientRef.current;
+
+      // --- Kiểm tra quyền mic trước khi tạo track ---
+      const hasMicPermission = await navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(() => true)
+        .catch((err) => {
+          log("❌ Không lấy được quyền micro:", err);
+          return false;
+        });
+
+      if (!hasMicPermission) {
+        log("🚫 Không có quyền micro, dừng call");
+        return;
+      }
+
+      // --- Tạo mic track ---
+      const micTrack = await AgoraRTC.createMicrophoneAudioTrack();
+      log("🎤 Mic track created:", micTrack.getTrackId(), micTrack.getMediaStreamTrack()?.readyState);
+
+      // --- Kiểm tra thiết bị audio khả dụng ---
+      const devices = await AgoraRTC.getDevices();
+      const mics = devices.filter((d) => d.kind === "audioinput");
+      const speakers = devices.filter((d) => d.kind === "audiooutput");
+      log("🎧 Danh sách thiết bị:", {
+        micCount: mics.length,
+        speakerCount: speakers.length,
+        mics,
+        speakers,
+      });
+
+      // --- Join channel ---
+      await client.join(appId, channelName, token || null, uid);
+      log(`✅ Joined channel ${channelName} as uid=${uid}`);
+
+      // --- Publish local track ---
+      await client.publish([micTrack]);
+      setLocalTrack(micTrack);
       setIsCalling(true);
-      console.log("🎤 Mic published successfully");
+      log("📡 Mic published successfully");
+
+      // --- Lắng nghe remote user ---
+      client.on("user-published", async (user, mediaType) => {
+        log("📥 Remote user published:", user.uid, mediaType);
+        await client.subscribe(user, mediaType);
+        log("✅ Subscribed to remote user:", user.uid, mediaType);
+
+        if (mediaType === "audio" && user.audioTrack) {
+          log("🔊 Đang phát remote audio...");
+          user.audioTrack.play();
+        }
+      });
+
+      client.on("user-unpublished", (user) => {
+        log("❌ Remote user unpublished:", user.uid);
+      });
+
+    // --- Theo dõi trạng thái mic ---
+const mediaStreamTrack = micTrack.getMediaStreamTrack();
+
+// Sự kiện khi mic bị ngắt (ví dụ đóng quyền hoặc mất device)
+mediaStreamTrack.addEventListener("ended", () => {
+  log("⚠️ Mic track ended (bị mất kết nối hoặc thu hồi quyền)");
+});
+
+// Kiểm tra thủ công mute/unmute (vì WebRTC không phát event mute/unmute)
+setInterval(() => {
+  if (mediaStreamTrack.enabled === false) {
+    log("🔇 Mic đang bị disable (mute)");
+  } else {
+    log("🔈 Mic đang hoạt động (unmuted)");
+  }
+}, 3000);
+
+
     } catch (err) {
-      console.error("🚨 startCall error:", err);
+      log("🚨 startCall error:", err);
     }
   };
 
@@ -38,17 +114,20 @@ export function useAgoraCall() {
       if (localTrack) {
         localTrack.stop();
         localTrack.close();
+        log("🛑 Mic track stopped & closed");
       }
-      await agoraClient.leave();
+      if (clientRef.current) {
+        await clientRef.current.leave();
+        log("👋 Left the call");
+      }
       setIsCalling(false);
     } catch (err) {
-      console.error("🚨 stopCall error:", err);
+      log("🚨 stopCall error:", err);
     }
   };
 
   return { startCall, stopCall, isCalling };
 }
-
 //
 export function useRealHeight(
   element: MutableRefObject<HTMLDivElement | null>,

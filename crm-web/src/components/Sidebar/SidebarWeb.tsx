@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Box,
   List,
@@ -20,7 +21,7 @@ import {
 } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { keyframes } from '@mui/system';
-import { assignTelesale } from '../../api/zaloApi';
+import { assignTelesale,deleteUserMessages } from '../../api/zaloApi';
 import SearchBar from '../SearchBar';
 import { Mic } from '@mui/icons-material';
 import SortFilter from '../SortFilter';
@@ -30,6 +31,7 @@ import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArro
 import type { ConversationWithAssign, ModuleKey } from './SidebarLayout';
 import type { Telesales } from '../../api/authApi';
 import type { Dispatch, SetStateAction } from 'react';
+import DeleteConfirmDialog from '../DeleteConfirmDialog';
 
 export interface SidebarLayoutProps {
   onSelectUser: (conversation: ConversationWithAssign) => void;
@@ -166,6 +168,14 @@ export default function SidebarWeb({
   loading,
   page,
 }: SidebarWebProps) {
+
+
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; conv: ConversationWithAssign | null }>({
+  open: false,
+  conv: null,
+});
+
+
   return (
     <Box
       sx={{
@@ -567,7 +577,16 @@ export default function SidebarWeb({
                           >
                             Phân công
                           </MenuItem>
-                          <MenuItem onClick={(e) => e.stopPropagation()}>Xóa</MenuItem>
+  <MenuItem
+  onClick={(e) => {
+    e.stopPropagation();
+    setDeleteDialog({ open: true, conv: c });
+  }}
+>
+  Xóa
+</MenuItem>
+
+
                           <MenuItem
                             onClick={(e) => {
                               e.stopPropagation();
@@ -718,6 +737,15 @@ export default function SidebarWeb({
         message={toast.message}
         sx={{ marginTop: 9, zIndex: 3000 }}
       />
+       {/* DeleteConfirmDialog */}
+      <DeleteConfirmDialog
+  open={deleteDialog.open}
+  conv={deleteDialog.conv}
+  onClose={() => setDeleteDialog({ open: false, conv: null })}
+  setToast={setToast}
+  setConversations={setConversations}
+/>
+
     </Box>
   );
 }

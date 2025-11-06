@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect,useState } from 'react';
 import { Box, Button, Typography, Avatar, CircularProgress } from '@mui/material';
 import CallEndIcon from '@mui/icons-material/CallEnd';
 import PhoneIcon from '@mui/icons-material/Phone';
@@ -14,12 +14,36 @@ export default function OutgoingCallPopup({
   onCancel: () => void;
   onConnected?: () => void;
 }) {
+
+
+// state cho thời gian gọi
+  const [callDuration, setCallDuration] = useState(0);
+
+
+
   useEffect(() => {
     const ring = new Audio('/sounds/calling-tone.mp3');
     ring.loop = true;
     ring.play();
-    return () => ring.pause();
+       // Bắt đầu timer
+    const timer = setInterval(() => {
+      setCallDuration((prev) => prev + 1);
+    }, 1000);
+   
+    return () => {
+      ring.pause();
+      clearInterval(timer);
+    };
   }, []);
+
+  // Chuyển số giây sang mm:ss
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60)
+      .toString()
+      .padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
 
   return (
     <Box
@@ -52,7 +76,7 @@ export default function OutgoingCallPopup({
         />
         <Typography variant="h6">{guestName}</Typography>
         <Typography variant="body2" color="gray" sx={{ mb: 3 }}>
-          Đang gọi...
+          Thời gian gọi...{formatTime(callDuration)}
         </Typography>
 
         <CircularProgress color="primary" size={24} sx={{ mb: 2 }} />

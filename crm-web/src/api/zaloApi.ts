@@ -130,3 +130,20 @@ export const assignTelesale = async (userId: string, telesaleId: string) => {
 
   return res.json();
 };
+// 🗑️ Xóa toàn bộ tin nhắn của 1 user
+export const deleteUserMessages = async (userId: string) => {
+  const token = getToken();
+  const res = await fetch(`${BASE_URL}/messages/${userId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    console.error('❌ deleteUserMessages failed:', res.status, await res.text());
+    throw new Error('Không thể xóa tin nhắn');
+  }
+
+  return res.json();
+};

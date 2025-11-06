@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-
+import { useState } from 'react';
 import {
   Box,
   List,
@@ -31,6 +31,7 @@ import { Mic } from '@mui/icons-material';
 import SortFilter from '../SortFilter';
 import LabelDialog from '../LabelDialog';
 import { type Telesales } from '../../api/authApi';
+import DeleteConfirmDialog from '../DeleteConfirmDialog';
 
 export type ModuleKey = 'chat' | 'employee' | 'customer' | 'automation' | 'reports';
 
@@ -166,6 +167,13 @@ export default function SidebarMobile({
   loading,
   page,
 }: SidebarMobileProps) {
+
+
+   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; conv: ConversationWithAssign | null }>({
+    open: false,
+    conv: null,
+  });
+
   return (
     <Box>
       {/* Toggle button */}
@@ -657,6 +665,15 @@ export default function SidebarMobile({
           sx={{ marginTop: 9, zIndex: 3000 }}
         />
       </Dialog>
+       {/* DeleteConfirmDialog */}
+      <DeleteConfirmDialog
+  open={deleteDialog.open}
+  conv={deleteDialog.conv}
+  onClose={() => setDeleteDialog({ open: false, conv: null })}
+  setToast={setToast}
+  setConversations={setConversations}
+/>
+
     </Box>
   );
 }

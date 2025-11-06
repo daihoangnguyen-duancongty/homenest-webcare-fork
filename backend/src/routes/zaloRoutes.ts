@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Router, Request, Response, NextFunction } from 'express';
 import { io } from '../server';
-import { getTokenController, sendMessageController } from '../controllers/zaloController';
+import { getTokenController, sendMessageController, deleteMessagesByUser } from '../controllers/zaloController';
 import { fetchZaloUserDetail } from '../services/zaloService';
 import UserModel from '../models/User';
 import ZaloMessageModel, { IZaloMessage } from '../models/ZaloMessage';
@@ -330,6 +330,10 @@ router.get('/telesales', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Xóa toàn bộ hội thoại (và tin nhắn) của một userId
+router.delete('/messages/:userId', authenticateToken, deleteMessagesByUser);
+
 //=====================CAll zalo==========================
 // Outbound call (Telesale gọi khách)
 router.post('/call/create', authenticateToken, authorizeRoles(['telesale','admin']), createCallController);

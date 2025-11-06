@@ -15,12 +15,13 @@ import {getGuestIdAPI} from '@/api/chatZaloApi'
 export default function Layout() {
     const [incomingCall, setIncomingCall] = useState<any>(null);
   const [debugLog, setDebugLog] = useState<string[]>([]);
-  const { startCall } = useAgoraCall();
+const { startCall, stopCall } = useAgoraCall();
   const [guestId, setGuestId] = useState<string | null>(null);
 
   const pushLog = (msg: string) => {
     setDebugLog((prev) => [...prev.slice(-49), msg]);
   };
+
 
 
 
@@ -61,7 +62,27 @@ export default function Layout() {
       socket.off(`incoming_call_${guestId}`, handleIncomingCall);
     };
   }, [guestId]);
+// Tương tác nhận
+const handleAccept = async () => {
+  if (!incomingCall) return;
 
+  // Cập nhật trạng thái cuộc gọi
+  setIncomingCall({ ...incomingCall, callStatus: 'connected' });
+
+  await startCall(
+    incomingCall.channelName,
+    incomingCall.guestToken,
+    incomingCall.appId,
+    incomingCall.guestAgoraId || '0'
+  );
+};
+// Tương tác kết thúc
+const handleEndCall = async () => {
+  if (!incomingCall) return;
+
+  await stopCall(); // dừng call
+  setIncomingCall(null); // ✅ chỉ xóa popup khi kết thúc
+};
 
 
   return (
@@ -83,29 +104,22 @@ export default function Layout() {
       <ScrollRestoration />
        {/* Popup cuộc gọi đến */}
       {incomingCall && guestId && (
-        <IncomingCallPopup
-          telesaleName={incomingCall.telesaleName}
-          callData={{
-            channelName: incomingCall.channelName,
-            guestToken: incomingCall.guestToken,
-            appId: incomingCall.appId,
-            guestAgoraId: incomingCall.guestAgoraId || '0',
-            telesaleAgoraId: incomingCall.telesaleAgoraId || undefined,
-            telesaleToken: incomingCall.telesaleToken || undefined,
-          }}
-          onAccept={async () => {
-            if (!incomingCall) return;
-            const uid = incomingCall.telesaleAgoraId || incomingCall.guestAgoraId || '0';
-            await startCall(
-              incomingCall.channelName,
-              incomingCall.guestToken,
-              incomingCall.appId,
-              uid
-            );
-            setIncomingCall(null);
-          }}
-          onReject={() => setIncomingCall(null)}
-        />
+       <IncomingCallPopup
+  telesaleName={incomingCall.telesaleName}
+  callData={{
+    channelName: incomingCall.channelName,
+    guestToken: incomingCall.guestToken,
+    appId: incomingCall.appId,
+    guestAgoraId: incomingCall.guestAgoraId || '0',
+    telesaleAgoraId: incomingCall.telesaleAgoraId || undefined,
+    telesaleToken: incomingCall.telesaleToken || undefined,
+  }}
+  role="guest"
+  callStatus={incomingCall.callStatus} // truyền trạng thái
+  onAccept={handleAccept} // không đóng popup ngay
+  onReject={handleEndCall} // kết thúc cuộc gọi
+/>
+
       )}
 
       {/* Debug log */}
