@@ -195,38 +195,46 @@ await GuestUser.updateOne(
       payload?.data ??
       [{ message: payload?.message?.text ?? '[no text]', time: Date.now() }];
 
-    for (const msg of messages) {
-      const text = msg.message ?? '[no text]';
-      const sentAt = msg.time ? new Date(msg.time) : new Date();
+   for (const msg of messages) {
+  const text = msg.message ?? '[no text]';
+  const sentAt = msg.time ? new Date(msg.time) : new Date();
 
-      const saved = await ZaloMessageModel.create({
-        userId: senderId,
-        text,
-        username: profileName,
-        avatar: profileAvatar,
-        senderType: 'customer',
-        success: true,
-        response: msg,
-        sentAt,
-        read: false,
-      });
+  const saved = await ZaloMessageModel.create({
+    userId: senderId,
+    text,
+    username: profileName,
+    avatar: profileAvatar,
+    senderType: 'customer',
+    success: true,
+    response: msg,
+    sentAt,
+    read: false,
+  });
 
-      const isOnline =
-        guest?.lastInteraction &&
-        Date.now() - new Date(guest.lastInteraction).getTime() <
-          ONLINE_THRESHOLD_MS;
+  const isOnline =
+    guest?.lastInteraction &&
+    Date.now() - new Date(guest.lastInteraction).getTime() < ONLINE_THRESHOLD_MS;
 
-      // Gửi realtime tới admin
-      const admins = await UserModel.find({ role: 'admin' });
-      admins.forEach((a) =>
-        io.to((a._id as any).toString()).emit('new_message', {
-          ...saved.toObject(),
-          isOnline,
-        })
-      );
-    }
+  // Gửi realtime tới admin
+  const admins = await UserModel.find({ role: 'admin' });
+  admins.forEach((a) =>
+    io.to((a._id as any).toString()).emit('new_message', {
+      ...saved.toObject(),
+      isOnline,
+    })
+  );
 
-    console.log(`💬 Saved ${messages.length} message(s) from userId=${senderId}`);
+  // ✅ Di chuyển đoạn này VÀO trong vòng for
+  if (guest?.assignedTelesale) {
+    io.to(guest.assignedTelesale.toString()).emit('new_message', {
+      ...saved.toObject(),
+      isOnline,
+    });
+  }
+}
+
+console.log(`💬 Saved ${messages.length} message(s) from userId=${senderId}`);
+
   } catch (err) {
     console.error('❌ Zalo webhook POST unexpected error:', err);
   }
