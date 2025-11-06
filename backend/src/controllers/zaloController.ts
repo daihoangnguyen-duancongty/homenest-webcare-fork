@@ -132,48 +132,39 @@ if (!guest) {
   };
 
   // Webhook nhận tin nhắn
- export const zaloWebhookController: RequestHandler = async (req, res) => {
+export const zaloWebhookController: RequestHandler = async (req, res) => {
   try {
     let payload: any = req.body;
     if (typeof payload === 'string') payload = JSON.parse(payload);
 
-    // Trả 200 ngay để Zalo không timeout
+    // Trả về 200 ngay để Zalo không timeout
     res.status(200).send('OK');
 
     const senderId = payload?.sender?.id ?? payload?.user?.id;
     if (!senderId) return;
 
     // === [1] Kiểm tra hoặc tạo mới GuestUser thật ===
-    let guest = await GuestUser.findById(senderId);
-    let profileName = 'Khách hàng';
-    let profileAvatar: string | null = null;
-
-    if (!guest) {
-      // Chỉ fetch profile thật khi user chưa tồn tại
-      const profile = await fetchZaloUserDetail(senderId);
-      if (!profile) {
-        console.warn(`⚠️ Không fetch được profile thật cho userId=${senderId}`);
-        return; // không tạo user giả
-      }
-
-      profileName = profile.display_name;
-      profileAvatar = profile.avatar;
-
-      guest = await GuestUser.create({
-        _id: senderId,
-        username: profile.display_name,
-        avatar: profile.avatar,
-        email: `${senderId}@zalo.local`,
-        lastInteraction: new Date(),
-      });
-    } else {
-      // User đã có trong DB → chỉ cập nhật thời gian hoạt động
-      guest.lastInteraction = new Date();
-      await guest.save();
-
-      profileName = guest.username;
-      profileAvatar = guest.avatar ?? null;
+    const profile = await fetchZaloUserDetail(senderId);
+    if (!profile) {
+      console.warn(`⚠️ Không fetch được profile thật cho userId=${senderId}`);
+      return;
     }
+
+    const guest = await GuestUser.findOneAndUpdate(
+      { _id: senderId },
+      {
+        $setOnInsert: {
+          username: profile.display_name,
+          avatar: profile.avatar,
+          email: `${senderId}@zalo.local`,
+        },
+        $set: { lastInteraction: new Date() },
+      },
+      { upsert: true, new: true }
+    );
+
+    const profileName = guest.username;
+    const profileAvatar = guest.avatar ?? null;
 
     // === [2] Lưu tin nhắn từ payload ===
     const messages: Array<{
@@ -205,7 +196,7 @@ if (!guest) {
         guest.lastInteraction &&
         Date.now() - guest.lastInteraction.getTime() < ONLINE_THRESHOLD_MS;
 
-      // Emit realtime tới admin
+      // Gửi realtime tới admin
       const admins = await UserModel.find({ role: 'admin' });
       admins.forEach((a) =>
         io.to((a._id as any).toString()).emit('new_message', {
@@ -220,6 +211,7 @@ if (!guest) {
     console.error('❌ Zalo webhook POST unexpected error:', err);
   }
 };
+
 
 
   // 🗑️ Xóa toàn bộ tin nhắn và thông tin khách theo userId
