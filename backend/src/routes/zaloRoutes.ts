@@ -38,100 +38,80 @@ router.use('/webhook', (req: Request, _res: Response, next: NextFunction) => {
 router.post('/webhook', async (req: Request, res: Response) => {
   try {
     let payload: any = req.body;
-    if (typeof payload === 'string') {
-      try {
-        payload = JSON.parse(payload);
-      } catch {
-        payload = {};
-      }
-    }
+    if (typeof payload === 'string') payload = JSON.parse(payload);
 
-    console.log('📥 Zalo webhook payload:', payload);
+    res.status(200).send('OK'); // ✅ trả về 200 ngay
 
-    res.status(200).send('OK'); // trả 200 ngay
-    // ✅ Xử lý khi khách bấm nút "Gọi tư vấn ngay"
-    if (
-      payload?.event_name === 'user_click_button' &&
-      payload?.message?.button?.payload === 'CALL_NOW'
-    ) {
-      const sender = payload?.sender || payload?.user;
-      const zaloUserId = sender?.id;
-      if (!zaloUserId) return;
+    const sender = payload?.sender ?? payload?.user;
+    const userId = sender?.id;
+    if (!userId) return;
 
-      console.log("📞 Khách bấm 'Gọi tư vấn ngay' → tạo inbound call cho telesale");
-
-      try {
-        // Gọi controller nội bộ để xử lý inbound call
-        await axios.post(
-          `${
-            process.env.BACKEND_URL || 'https://homenest-webcare-fork-production.up.railway.app'
-          }/api/zalo/call/inbound`,
-          { zaloUserId }
-        );
-      } catch (err: any) {
-        console.error('❌ Lỗi gọi inboundCallController:', err.message);
-      }
-
-      return; // Dừng xử lý tiếp
-    }
-
-    // xử lý tinh nhắn văn bản
-    const sender = payload?.sender ?? payload?.user ?? null;
-    if (!sender?.id) return;
-
-    const userId = sender.id;
     const text = payload?.message?.text ?? '[no text]';
 
-    // Upsert GuestUser với mock nếu chưa có
-  let guest = await GuestUser.findById(userId);
-if (!guest) {
-  const profile = await fetchZaloUserDetail(userId);
-  if (!profile) {
-    console.warn(`⚠️ Không lấy được profile Zalo cho userId=${userId}, bỏ qua`);
-    return;
-  }
+    // === [1] Lấy hoặc tạo GuestUser ngay (dù chưa có profile) ===
+    let guest = await GuestUser.findById(userId);
+    if (!guest) {
+      // Tạo nhanh guest placeholder (để không mất tin)
+      guest = await GuestUser.create({
+        _id: userId,
+        username: 'Khách hàng',
+        avatar: null,
+        email: `${userId}@zalo.local`,
+        lastInteraction: new Date(),
+      });
 
-  guest = await GuestUser.create({
-    _id: userId,
-    username: profile.display_name,
-    avatar: profile.avatar,
-    email: `${userId}@zalo.local`,
-    lastInteraction: new Date(),
-  });
-} else {
-  guest.lastInteraction = new Date();
-  await guest.save();
-}
+      // Sau khi tạo → fetch profile thật (bất đồng bộ)
+      fetchZaloUserDetail(userId)
+        .then((profile) => {
+          if (profile?.display_name) {
+            GuestUser.updateOne(
+              { _id: userId },
+              {
+                $set: {
+                  username: profile.display_name,
+                  avatar: profile.avatar ?? null,
+                  updatedAt: new Date(),
+                },
+              }
+            ).catch(console.error);
+          }
+        })
+        .catch((e) => console.warn('⚠️ Fetch profile async thất bại:', e.message));
+    } else {
+      guest.lastInteraction = new Date();
+      await guest.save();
+    }
 
-
-    const profile = await fetchZaloUserDetail(userId);
-
+    // === [2] Lưu tin nhắn ngay (dù profile chưa sẵn sàng) ===
     const saved = await ZaloMessageModel.create({
       userId,
       text,
-      username: profile?.name ?? guest.username,
-      avatar: profile?.avatar ?? guest.avatar,
-      senderType: 'customer', // thêm senderType
+      username: guest.username,
+      avatar: guest.avatar,
+      senderType: 'customer',
       success: true,
       response: payload,
+      sentAt: new Date(),
+      read: false,
     });
 
-    // Emit realtime cho admin, kèm trạng thái online
+    // === [3] Emit realtime cho admin ===
     const admins = await UserModel.find({ role: 'admin' });
     admins.forEach((a) =>
       io.to((a._id as any).toString()).emit('new_message', {
         ...saved.toObject(),
-        isOnline: guest?.lastInteraction
-          ? Date.now() - guest.lastInteraction.getTime() < ONLINE_THRESHOLD_MS
-          : false, // thêm isOnline
+        isOnline:
+          guest.lastInteraction &&
+          Date.now() - guest.lastInteraction.getTime() < ONLINE_THRESHOLD_MS,
       })
     );
 
-    console.log(`💬 Saved message from userId=${userId}, username=${saved.username}`);
+    console.log(`💬 Saved message from userId=${userId}, username=${guest.username}`);
   } catch (err) {
     console.error('❌ Zalo webhook POST unexpected error:', err);
   }
 });
+
 
 // Các route khác
 router.get('/token', getTokenController);
