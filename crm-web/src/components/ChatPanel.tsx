@@ -21,6 +21,7 @@ import { useSocketStore } from '../store/socketStore';
 import { useChatStore } from '../store/chatStore';
 import type { UserWithOnline } from '../types/index';
 import { useAgoraCall } from '../hooks/useAgoraCall';
+import LabelDialog from './LabelDialog';
 
 interface ChatPanelProps {
   userId: string;
@@ -72,6 +73,10 @@ const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const assignedTelesale = useChatStore((state) => state.assignedTelesale[userId]);
   const setAssignedTelesaleStore = useChatStore((state) => state.setAssignedTelesale);
+  // Tag label state
+  const [label, setLabel] = useState<string>('');
+  const [labelDialogOpen, setLabelDialogOpen] = useState(false);
+  const [availableLabels, setAvailableLabels] = useState<string[]>([]);
 
   // ----------------- Drag & Resize -----------------
   const [position, setPosition] = useState<{ top: number; left: number }>(() => ({
@@ -188,6 +193,21 @@ const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     },
     [userId, role, token, hasMore, onLoaded, fetchAssignedTelesale]
   );
+  // ----------------- Fetch label -----------------
+  useEffect(() => {
+    const fetchLabel = async () => {
+      try {
+        const res = await axios.get(`${BACKEND_URL}/api/zalo/guest-users/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setLabel(res.data.label || '');
+      } catch (err) {
+        console.error('Lỗi khi lấy nhãn:', err);
+      }
+    };
+
+    if (userId) fetchLabel();
+  }, [userId, token]);
 
   useEffect(() => {
     if (!assignedTelesale && messages.length > 0) {
@@ -201,7 +221,7 @@ const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // ----------------- Socket -----------------
   useEffect(() => {
     if (!socket || !userId) return;
-    socket.emit('join', currentUser.id);
+    socket.emit('join', { telesaleId: currentUser.id, userId });
     fetchMessages();
   }, [socket, userId, currentUser.id, fetchMessages]);
 
@@ -240,6 +260,7 @@ const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
       };
 
       setMessages((prev) => [...prev, savedMessage]);
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
       setText('');
       socket?.emit('new_message', savedMessage);
     } catch (err) {
@@ -362,6 +383,12 @@ setCallDuration(0);
       setLoadingCallLink(false);
     }
   };
+  // Cleanup call timer on unmount
+  useEffect(() => {
+    return () => {
+      if (callTimerRef.current) clearInterval(callTimerRef.current);
+    };
+  }, []);
 
   // ----------------- Render -----------------
   return (
@@ -446,9 +473,29 @@ setCallDuration(0);
             {loadingCallLink ? <CircularProgress size={16} sx={{ color: 'white' }} /> : '📞'}
           </IconButton>
 
-          <IconButton size="small" sx={{ color: 'white' }}>
-            🏷️
-          </IconButton>
+          <Box display="flex" alignItems="center" gap={0.5} sx={{ mx: 3 }}>
+            <IconButton
+              size="small"
+              sx={{ color: 'white' }}
+              onClick={() => setLabelDialogOpen(true)}
+              title="Gắn nhãn"
+            >
+              🏷️
+            </IconButton>
+            {label && (
+              <Typography
+                variant="caption"
+                sx={{
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  color: '#fff',
+                  px: 1,
+                  borderRadius: 1,
+                }}
+              >
+                {label}
+              </Typography>
+            )}
+          </Box>
 
           <Button
             size="small"
@@ -558,6 +605,16 @@ setCallDuration(0);
           }}
         />
       )}
+      <LabelDialog
+        open={labelDialogOpen}
+        onClose={() => setLabelDialogOpen(false)}
+        selectedConversation={{ userId, name: firstMessage.username, label }}
+        availableLabels={availableLabels}
+        setAvailableLabels={setAvailableLabels}
+        selectedLabel={label}
+        setSelectedLabel={setLabel}
+        onSave={(newLabel) => setLabel(newLabel)} // Cập nhật UI khi lưu
+      />
     </Paper>
   );
 }

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Message, User } from '../types';
+import type { Message, User, GuestUser } from '../types';
 import { getToken } from '../utils/auth';
 import { BACKEND_URL } from './../config/fetchConfig';
 import type { CallData } from '../types';

@@ -1,5 +1,9 @@
 import { Router } from 'express';
-import { getGuestUsers, getGuestUserById } from '../controllers/zaloGuestController';
+import {
+  getGuestUsers,
+  getGuestUserById,
+  updateGuestLabel,
+} from '../controllers/zaloGuestController';
 import { authenticateToken } from '../middleware/authenticateJWT';
 import ActiveCall from '../models/ActiveCall';
 const router = Router();
@@ -30,4 +34,17 @@ router.get('/guest-id-for-mini-app', async (req, res) => {
   }
 });
 
+    if (!activeCall) {
+      res.status(404).json({ message: 'Không có khách nào đang gọi' });
+      return;
+    }
+
+    res.json({ guestId: activeCall.guestId });
+  } catch (err: any) {
+    console.error('❌ Lỗi khi lấy guestId đang gọi:', err);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
+});
+// ✅ Cập nhật nhãn cho khách hàng Zalo
+router.put('/guest-users/:userId/label', authenticateToken, updateGuestLabel);
 export default router;

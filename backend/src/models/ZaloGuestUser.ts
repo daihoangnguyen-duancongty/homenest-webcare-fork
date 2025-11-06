@@ -9,6 +9,7 @@ export interface IGuestUser extends Document {
   isOnline?: boolean;
   lastInteraction?: Date;
   assignedTelesale?: string | null;
+  label?: string;
 }
 
 const guestUserSchema = new Schema<IGuestUser>(
@@ -20,6 +21,7 @@ const guestUserSchema = new Schema<IGuestUser>(
     isOnline: { type: Boolean, default: false },
     lastInteraction: { type: Date, default: null },
     assignedTelesale: { type: String, default: null },
+    label: { type: String, default: '' },
   },
   { timestamps: true }
 );
