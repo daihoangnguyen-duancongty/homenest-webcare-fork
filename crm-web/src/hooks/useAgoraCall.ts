@@ -85,8 +85,15 @@ export const useAgoraCall = (userId: string, role: 'guest' | 'telesale' | 'admin
       const agoraUID =
         role === 'telesale' || role === 'admin' ? data.telesaleAgoraId : data.guestAgoraId;
 
-      console.log('🔹 Join Agora với UID:', agoraUID, 'Token:', agoraToken);
-      await agoraClient.join(data.appId, data.channelName, agoraToken, agoraUID);
+     console.log("🧩 [CRM JOIN INFO]", {
+  AppId: data.appId,
+  Channel: data.channelName,
+  UID: agoraUID,
+  Token: agoraToken?.substring(0, 40) + "...",
+});
+
+await agoraClient.join(data.appId, data.channelName, agoraToken, agoraUID);
+
 
       await agoraClient.publish([localAudioTrack]);
       console.log('✅ Join call thành công');

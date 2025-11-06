@@ -60,9 +60,17 @@ export function useAgoraCall() {
         speakers,
       });
 
-      // --- Join channel ---
-      await client.join(appId, channelName, token || null, uid);
-      log(`✅ Joined channel ${channelName} as uid=${uid}`);
+ // --- Join channel ---
+log("🧩 [MINI APP JOIN INFO]", {
+  AppId: appId,
+  Channel: channelName,
+  UID: uid,
+  Token: token?.substring(0, 40) + "...", // chỉ log 40 ký tự đầu cho gọn
+});
+
+await client.join(appId, channelName, token || null, uid);
+log(`✅ Joined channel ${channelName} as uid=${uid}`);
+
 
       // --- Publish local track ---
       await client.publish([micTrack]);
