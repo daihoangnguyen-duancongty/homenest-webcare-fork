@@ -115,9 +115,9 @@ const guest = await GuestUser.findById(userId).lean();
         read: true,
       });
 
-      const isOnline = guest.lastInteraction
-        ? Date.now() - guest.lastInteraction.getTime() < ONLINE_THRESHOLD_MS
-        : false;
+    const isOnline = guest?.lastInteraction
+  ? Date.now() - new Date(guest.lastInteraction).getTime() < ONLINE_THRESHOLD_MS
+  : false;
 
       io.to(userId).emit('new_message', { ...saved.toObject(), isOnline });
 
