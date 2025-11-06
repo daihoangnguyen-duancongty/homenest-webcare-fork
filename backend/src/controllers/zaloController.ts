@@ -77,27 +77,26 @@
       const senderRole = senderUser.role;
 
       // Upsert guest mock và cập nhật lastInteraction
-    let guest = await GuestUser.findById(userId);
 
-if (!guest) {
-  const profile = await fetchZaloUserDetail(userId);
-  if (!profile) {
-    console.warn(`⚠️ Không lấy được profile Zalo cho userId=${userId}`);
-     res.status(404).json({ error: 'Không tìm thấy profile Zalo' });
-     return
-  }
+const profile = await fetchZaloUserDetail(userId);
 
-  guest = await GuestUser.create({
-    _id: userId,
-    username: profile.display_name,
-    avatar: profile.avatar,
-    email: `${userId}@zalo.local`,
-    lastInteraction: new Date(),
-  });
-} else {
-  guest.lastInteraction = new Date();
-  await guest.save();
-}
+await GuestUser.updateOne(
+  { _id: userId },
+  {
+    $set: {
+      username: profile?.display_name ?? 'Khách hàng',
+      avatar: profile?.avatar ?? null,
+      email: `${userId}@zalo.local`,
+      lastInteraction: new Date(),
+    },
+    $setOnInsert: {
+      createdAt: new Date(),
+    },
+  },
+  { upsert: true }
+);
+
+const guest = await GuestUser.findById(userId).lean();
 
 
       // Gửi tin nhắn tới OA
@@ -144,26 +143,25 @@ export const zaloWebhookController: RequestHandler = async (req, res) => {
     if (!senderId) return;
 
     // === [1] Lấy profile Zalo thật ===
-    const profile = await fetchZaloUserDetail(senderId);
-    if (!profile) {
-      console.warn(`⚠️ Không fetch được profile thật cho userId=${senderId}`);
-      return;
-    }
+   // Upsert an toàn không gây duplicate key
+const profile = await fetchZaloUserDetail(senderId);
 
-    // === [2] Upsert an toàn (atomic) để tránh lỗi trùng key ===
-    await GuestUser.updateOne(
-      { _id: senderId },
-      {
-        $setOnInsert: {
-          username: profile.display_name,
-          avatar: profile.avatar,
-          email: `${senderId}@zalo.local`,
-          createdAt: new Date(),
-        },
-        $set: { lastInteraction: new Date() },
-      },
-      { upsert: true }
-    );
+await GuestUser.updateOne(
+  { _id: senderId },
+  {
+    $set: {
+      username: profile?.display_name ?? 'Khách hàng',
+      avatar: profile?.avatar ?? null,
+      email: `${senderId}@zalo.local`,
+      lastInteraction: new Date(),
+    },
+    $setOnInsert: {
+      createdAt: new Date(),
+    },
+  },
+  { upsert: true }
+);
+
 
     // Lấy lại thông tin guest sau khi upsert
     const guest = await GuestUser.findById(senderId).lean();
