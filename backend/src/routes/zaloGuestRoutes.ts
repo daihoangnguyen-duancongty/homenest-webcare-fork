@@ -1,9 +1,5 @@
 import { Router } from 'express';
-import {
-  getGuestUsers,
-  getGuestUserById,
-  updateGuestLabel,
-} from '../controllers/zaloGuestController';
+import { getGuestUsers, getGuestUserById } from '../controllers/zaloGuestController';
 import { authenticateToken } from '../middleware/authenticateJWT';
 import ActiveCall from '../models/ActiveCall';
 const router = Router();
@@ -36,6 +32,4 @@ router.get('/guest-id-for-mini-app', async (req, res) => {
   }
 });
 
-// ✅ Cập nhật nhãn cho khách hàng Zalo
-router.put('/guest-users/:userId/label', authenticateToken, updateGuestLabel);
 export default router;

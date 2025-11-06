@@ -1,7 +1,11 @@
 import axios from 'axios';
 import { Router, Request, Response, NextFunction } from 'express';
 import { io } from '../server';
-import { getTokenController, sendMessageController, deleteMessagesByUser } from '../controllers/zaloController';
+import {
+  getTokenController,
+  sendMessageController,
+  deleteMessagesByUser,
+} from '../controllers/zaloController';
 import { fetchZaloUserDetail } from '../services/zaloService';
 import UserModel from '../models/User';
 import ZaloMessageModel, { IZaloMessage } from '../models/ZaloMessage';
@@ -10,9 +14,12 @@ import { createMockUser } from '../utils/mockUser';
 import { authenticateToken, AuthRequest } from '../middleware/authenticateJWT';
 import { authorizeRoles } from '../middleware/authorizeRole';
 import ZaloToken from '../models/ZaloToken';
-import { createCallController,inboundCallController,startCall } from '../controllers/zaloCallController';
+import {
+  createCallController,
+  inboundCallController,
+  startCall,
+} from '../controllers/zaloCallController';
 import { getAccessToken } from '../services/zaloService';
-
 
 const router = Router();
 const ONLINE_THRESHOLD_MS = 30 * 60 * 1000; // 30 phút
@@ -110,13 +117,13 @@ router.post('/webhook', async (req: Request, res: Response) => {
       })
     );
 
-    console.log(`💬 Saved message (real profile) from userId=${userId}, username=${profile.display_name}`);
+    console.log(
+      `💬 Saved message (real profile) from userId=${userId}, username=${profile.display_name}`
+    );
   } catch (err: any) {
     console.error('❌ Zalo webhook POST unexpected error:', err.message);
   }
 });
-
-
 
 // Các route khác
 router.get('/token', getTokenController);
@@ -335,7 +342,12 @@ router.delete('/messages/:userId', authenticateToken, deleteMessagesByUser);
 
 //=====================CAll zalo==========================
 // Outbound call (Telesale gọi khách)
-router.post('/call/create', authenticateToken, authorizeRoles(['telesale','admin']), createCallController);
+router.post(
+  '/call/create',
+  authenticateToken,
+  authorizeRoles(['telesale', 'admin']),
+  createCallController
+);
 
 // Inbound call (Khách gọi vào CRM)
 router.post('/call/inbound', inboundCallController);
