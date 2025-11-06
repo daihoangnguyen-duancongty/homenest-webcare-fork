@@ -16,13 +16,11 @@ router.get('/guest-users/:id', authenticateToken, getGuestUserById);
 router.get('/guest-id-for-mini-app', async (req, res) => {
   try {
     // Lấy cuộc gọi đang active mới nhất
-    const activeCall = await ActiveCall.findOne({ status: 'calling' })
-      .sort({ createdAt: -1 })
-      .lean();
+    const activeCall = await ActiveCall.findOne({ status: 'calling' }).sort({ createdAt: -1 }).lean();
 
     if (!activeCall) {
       res.status(404).json({ message: 'Không có khách nào đang gọi' });
-      return;
+       return
     }
 
     res.json({ guestId: activeCall.guestId });

@@ -74,7 +74,7 @@ export interface SidebarMobileProps {
   setSelectedConversation: (conv: ConversationWithAssign | null) => void;
   selectedLabel: string;
   setSelectedLabel: (val: string) => void;
-  onUpdateLabel: (userId: string, label: string) => Promise<void>;
+
   // Toast và xác nhận
   toast: { open: boolean; message: string };
   setToast: Dispatch<SetStateAction<{ open: boolean; message: string }>>; // ✅
@@ -151,7 +151,7 @@ export default function SidebarMobile({
   setSelectedConversation,
   selectedLabel,
   setSelectedLabel,
-  onUpdateLabel,
+
   // thông báo & xác nhận
   toast,
   setToast,
@@ -167,10 +167,9 @@ export default function SidebarMobile({
   loading,
   page,
 }: SidebarMobileProps) {
-  const [deleteDialog, setDeleteDialog] = useState<{
-    open: boolean;
-    conv: ConversationWithAssign | null;
-  }>({
+
+
+   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; conv: ConversationWithAssign | null }>({
     open: false,
     conv: null,
   });
@@ -625,20 +624,37 @@ export default function SidebarMobile({
           </DialogActions>
         </Dialog>
         {/* LabelDialog*/}
-        {/* LabelDialog */}
         <LabelDialog
           open={isLabelDialogOpen}
           onClose={() => setIsLabelDialogOpen(false)}
           selectedConversation={selectedConversation || undefined}
           availableLabels={availableLabels}
+          setAvailableLabels={setAvailableLabels}
           selectedLabel={selectedLabel}
           setSelectedLabel={setSelectedLabel}
-          setAvailableLabels={setAvailableLabels}
-          onSave={async (label) => {
+          onSave={(label) => {
             if (!selectedConversation) return;
-            await onUpdateLabel(selectedConversation.userId, label);
+
+            // Cập nhật label cho conversation
+            setConversations((prev) =>
+              prev.map((conv) =>
+                conv.userId === selectedConversation.userId ? { ...conv, label } : conv
+              )
+            );
+
+            // Cập nhật availableLabels nếu chưa có
+            if (!availableLabels.includes(label)) {
+              setAvailableLabels((prev) => [...prev, label]);
+            }
+
+            // Hiện toast
+            setToast({
+              open: true,
+              message: `✅ Đã gắn nhãn "${label}" cho ${selectedConversation.name}`,
+            });
           }}
         />
+
         {/* Snackbar */}
         <Snackbar
           open={toast.open}
@@ -649,14 +665,15 @@ export default function SidebarMobile({
           sx={{ marginTop: 9, zIndex: 3000 }}
         />
       </Dialog>
-      {/* DeleteConfirmDialog */}
+       {/* DeleteConfirmDialog */}
       <DeleteConfirmDialog
-        open={deleteDialog.open}
-        conv={deleteDialog.conv}
-        onClose={() => setDeleteDialog({ open: false, conv: null })}
-        setToast={setToast}
-        setConversations={setConversations}
-      />
+  open={deleteDialog.open}
+  conv={deleteDialog.conv}
+  onClose={() => setDeleteDialog({ open: false, conv: null })}
+  setToast={setToast}
+  setConversations={setConversations}
+/>
+
     </Box>
   );
 }

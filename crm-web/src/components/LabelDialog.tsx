@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -12,8 +12,7 @@ import {
   MenuItem,
   Button,
   TextField,
-} from '@mui/material';
-import { updateGuestLabel } from './../api/zaloApi';
+} from "@mui/material";
 
 export interface LabelDialogProps {
   open: boolean;
@@ -26,7 +25,7 @@ export interface LabelDialogProps {
   onSave: (label: string) => void;
 }
 
-export default function LabelDialog({
+const LabelDialog: React.FC<LabelDialogProps> = ({
   open,
   onClose,
   selectedConversation,
@@ -35,13 +34,13 @@ export default function LabelDialog({
   selectedLabel,
   setSelectedLabel,
   onSave,
-}: LabelDialogProps) {
-  const [newLabel, setNewLabel] = useState('');
+}) => {
+  const [newLabel, setNewLabel] = useState("");
 
   // Reset input khi mở dialog
   useEffect(() => {
     if (open) {
-      setNewLabel('');
+      setNewLabel("");
     }
   }, [open]);
 
@@ -50,29 +49,23 @@ export default function LabelDialog({
     if (trimmedLabel && !availableLabels.includes(trimmedLabel)) {
       setAvailableLabels((prev) => [...prev, trimmedLabel]);
       setSelectedLabel(trimmedLabel); // chọn luôn nhãn vừa thêm
-      setNewLabel('');
+      setNewLabel("");
     }
   };
 
+  const handleSave = () => {
+    if (!selectedConversation || !selectedLabel) return;
+    onSave(selectedLabel);
+    onClose();
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       handleAddNewLabel();
     }
   };
-  //
-  const handleSave = async () => {
-    if (!selectedConversation || !selectedLabel) return;
 
-    try {
-      await updateGuestLabel(selectedConversation.userId, selectedLabel);
-
-      onSave(selectedLabel);
-      onClose();
-    } catch (err) {
-      console.error('❌ Lỗi khi lưu nhãn:', err);
-    }
-  };
   return (
     <Dialog
       open={open}
@@ -80,8 +73,8 @@ export default function LabelDialog({
       PaperProps={{
         sx: {
           borderRadius: 4,
-          background: 'linear-gradient(135deg, #f5f7fa 0%, #e4ecfa 100%)',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.08)',
+          background: "linear-gradient(135deg, #f5f7fa 0%, #e4ecfa 100%)",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.08)",
         },
       }}
       sx={{ zIndex: 2600 }}
@@ -89,54 +82,35 @@ export default function LabelDialog({
       <DialogTitle
         sx={{
           fontWeight: 600,
-          background: 'linear-gradient(90deg, #0078ff 0%, #8a2be2 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          fontSize: '1.2rem',
+          background: "linear-gradient(90deg, #0078ff 0%, #8a2be2 100%)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          fontSize: "1.2rem",
         }}
       >
         Gắn nhãn cho hội thoại
       </DialogTitle>
 
-      <DialogContent sx={{ overflow: 'visible', position: 'relative' }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+      <DialogContent>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
           <Typography variant="body2" color="text.secondary">
-            Chọn hoặc thêm nhãn mới cho{' '}
-            <strong style={{ color: '#444' }}>{selectedConversation?.name || 'người dùng'}</strong>
+            Chọn hoặc thêm nhãn mới cho{" "}
+            <strong style={{ color: "#444" }}>
+              {selectedConversation?.name || "người dùng"}
+            </strong>
           </Typography>
 
           {/* Chọn nhãn có sẵn */}
-
-          <FormControl
-            fullWidth
-            size="small"
-            sx={{
-              borderRadius: 3,
-              backgroundColor: 'white',
-              '&:hover': { backgroundColor: '#f9f9ff' },
-            }}
-          >
+          <FormControl fullWidth variant="outlined" size="small">
             <InputLabel>Chọn nhãn</InputLabel>
             <Select
               value={selectedLabel}
               label="Chọn nhãn"
               onChange={(e) => setSelectedLabel(e.target.value)}
-              MenuProps={{
-                disablePortal: true, // ✅ đúng chỗ, truyền xuống Menu bên trong
-                disableScrollLock: true,
-                PaperProps: {
-                  sx: {
-                    borderRadius: 2,
-                    mt: 1,
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-                    zIndex: 2000,
-                  },
-                },
-              }}
               sx={{
                 borderRadius: 3,
-                backgroundColor: 'white',
-                '&:hover': { backgroundColor: '#f9f9ff' },
+                backgroundColor: "white",
+                "&:hover": { backgroundColor: "#f9f9ff" },
               }}
             >
               {availableLabels.map((label) => (
@@ -148,7 +122,7 @@ export default function LabelDialog({
           </FormControl>
 
           {/* Thêm nhãn mới */}
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ display: "flex", gap: 1 }}>
             <TextField
               variant="outlined"
               size="small"
@@ -158,9 +132,9 @@ export default function LabelDialog({
               onChange={(e) => setNewLabel(e.target.value)}
               onKeyPress={handleKeyPress} // nhấn Enter để thêm
               sx={{
-                '& .MuiOutlinedInput-root': {
+                "& .MuiOutlinedInput-root": {
                   borderRadius: 3,
-                  backgroundColor: 'white',
+                  backgroundColor: "white",
                 },
               }}
             />
@@ -168,14 +142,14 @@ export default function LabelDialog({
               variant="contained"
               onClick={handleAddNewLabel}
               sx={{
-                background: 'linear-gradient(135deg, #0078ff 0%, #8a2be2 100%)',
-                color: '#fff',
+                background: "linear-gradient(135deg, #0078ff 0%, #8a2be2 100%)",
+                color: "#fff",
                 borderRadius: 3,
                 fontWeight: 600,
-                textTransform: 'none',
+                textTransform: "none",
                 px: 3,
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #0066e0 0%, #7a1fd4 100%)',
+                "&:hover": {
+                  background: "linear-gradient(135deg, #0066e0 0%, #7a1fd4 100%)",
                 },
               }}
             >
@@ -189,10 +163,10 @@ export default function LabelDialog({
         <Button
           onClick={onClose}
           sx={{
-            textTransform: 'none',
+            textTransform: "none",
             borderRadius: 3,
             px: 2.5,
-            color: '#555',
+            color: "#555",
           }}
         >
           Hủy
@@ -201,14 +175,14 @@ export default function LabelDialog({
           variant="contained"
           onClick={handleSave}
           sx={{
-            background: 'linear-gradient(135deg, #0078ff 0%, #8a2be2 100%)',
-            color: '#fff',
+            background: "linear-gradient(135deg, #0078ff 0%, #8a2be2 100%)",
+            color: "#fff",
             fontWeight: 600,
-            textTransform: 'none',
+            textTransform: "none",
             borderRadius: 3,
             px: 3,
-            '&:hover': {
-              background: 'linear-gradient(135deg, #0066e0 0%, #7a1fd4 100%)',
+            "&:hover": {
+              background: "linear-gradient(135deg, #0066e0 0%, #7a1fd4 100%)",
             },
           }}
         >
@@ -217,4 +191,6 @@ export default function LabelDialog({
       </DialogActions>
     </Dialog>
   );
-}
+};
+
+export default LabelDialog;

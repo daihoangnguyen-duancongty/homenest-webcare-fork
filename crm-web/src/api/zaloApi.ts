@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Message, User, GuestUser } from '../types';
+import type { Message, User } from '../types';
 import { getToken } from '../utils/auth';
 import { BACKEND_URL } from './../config/fetchConfig';
 import type { CallData } from '../types';
@@ -143,25 +143,6 @@ export const deleteUserMessages = async (userId: string) => {
   if (!res.ok) {
     console.error('❌ deleteUserMessages failed:', res.status, await res.text());
     throw new Error('Không thể xóa tin nhắn');
-  }
-
-  return res.json();
-};
-// 🟧 Cập nhật nhãn khách hàng
-export const updateGuestLabel = async (userId: string, label: string): Promise<GuestUser> => {
-  const token = getToken();
-  const res = await fetch(`${BASE_URL}/guest-users/${userId}/label`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ label }),
-  });
-
-  if (!res.ok) {
-    console.error('❌ updateGuestLabel failed:', res.status, await res.text());
-    throw new Error('Cannot update label');
   }
 
   return res.json();
