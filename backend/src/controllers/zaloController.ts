@@ -142,18 +142,34 @@ export const zaloWebhookController: RequestHandler = async (req, res) => {
     const senderId = payload?.sender?.id ?? payload?.user?.id;
     if (!senderId) return;
 
-    // === [1] Lấy profile Zalo thật ===
-   // Upsert an toàn không gây duplicate key
-const profile = await fetchZaloUserDetail(senderId);
 
+// === [1] Lấy profile Zalo thật, retry tối đa 3 lần nếu thất bại ===
+let profile = null;
+for (let attempt = 1; attempt <= 3; attempt++) {
+  try {
+    profile = await fetchZaloUserDetail(senderId);
+    if (profile?.display_name) break; // ✅ Có thông tin thật thì thoát vòng lặp
+  } catch (err) {
+    console.warn(`⚠️ Thử lần ${attempt} lấy profile Zalo cho ${senderId} thất bại:`, err.message);
+  }
+  await new Promise((r) => setTimeout(r, 500 * attempt)); // ⏳ chờ tăng dần 0.5s, 1s, 1.5s
+}
+
+if (!profile) {
+  console.error(`❌ Không thể lấy thông tin thật từ Zalo cho userId=${senderId}`);
+  return; // ❗Nếu vẫn thất bại thì không lưu tin (bảo đảm dữ liệu luôn đúng)
+}
+
+// === [2] Tạo hoặc cập nhật GuestUser với profile thật ===
 await GuestUser.updateOne(
   { _id: senderId },
   {
     $set: {
-      username: profile?.display_name ?? 'Khách hàng',
-      avatar: profile?.avatar ?? null,
+      username: profile.display_name,
+      avatar: profile.avatar ?? null,
       email: `${senderId}@zalo.local`,
       lastInteraction: new Date(),
+      updatedAt: new Date(),
     },
     $setOnInsert: {
       createdAt: new Date(),
