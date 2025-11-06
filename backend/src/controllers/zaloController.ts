@@ -149,10 +149,9 @@ for (let attempt = 1; attempt <= 3; attempt++) {
   try {
     profile = await fetchZaloUserDetail(senderId);
     if (profile?.display_name) break; // ✅ Có thông tin thật thì thoát vòng lặp
-  } catch (err: any) {
-  console.warn(`⚠️ Thử lần ${attempt} lấy profile Zalo cho ${senderId} thất bại:`, err.message);
-}
-
+  } catch (err) {
+    console.warn(`⚠️ Thử lần ${attempt} lấy profile Zalo cho ${senderId} thất bại:`, err.message);
+  }
   await new Promise((r) => setTimeout(r, 500 * attempt)); // ⏳ chờ tăng dần 0.5s, 1s, 1.5s
 }
 
