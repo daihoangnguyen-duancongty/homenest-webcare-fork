@@ -218,35 +218,30 @@ await GuestUser.updateOne(
 
 
 
-  // 🗑️ Xóa toàn bộ tin nhắn và thông tin khách theo userId
-  export const deleteMessagesByUser: RequestHandler = async (req, res): Promise<void> => {
-    try {
-      const { userId } = req.params;
-      if (!userId) {
-        res.status(400).json({ success: false, message: 'Thiếu userId' });
-        return;
-      }
-
-      // Xóa tất cả tin nhắn
-      const msgResult = await ZaloMessageModel.deleteMany({ userId });
-
-      // Xóa luôn thông tin guest (nếu có)
-      const guestResult = await GuestUser.deleteOne({ _id: userId });
-
-      console.log(
-        `🗑️ Đã xóa ${msgResult.deletedCount} tin nhắn và ${guestResult.deletedCount} guestUser của userId=${userId}`
-      );
-
-      res.json({
-        success: true,
-        message: `Đã xóa toàn bộ tin nhắn và thông tin user ${userId}`,
-      });
-    } catch (error: any) {
-      console.error('❌ deleteMessagesByUser error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Xóa tin nhắn thất bại',
-        error: error.message,
-      });
+ 
+ // 🗑️ Xóa toàn bộ tin nhắn và GuestUser
+export const deleteMessagesByUser: RequestHandler = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    if (!userId) {
+      res.status(400).json({ success: false, message: 'Thiếu userId' });
+      return;
     }
-  };
+
+    // Xóa tin nhắn và guest user
+    const [msgResult, guestResult] = await Promise.all([
+      ZaloMessageModel.deleteMany({ userId }),
+      GuestUser.deleteOne({ _id: userId }),
+    ]);
+
+    console.log(`🗑️ Đã xóa ${msgResult.deletedCount} tin và guestUser=${guestResult.deletedCount}`);
+
+    res.json({
+      success: true,
+      message: `Đã xóa hội thoại + guestUser ${userId}`,
+    });
+  } catch (error: any) {
+    console.error('❌ deleteMessagesByUser error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
