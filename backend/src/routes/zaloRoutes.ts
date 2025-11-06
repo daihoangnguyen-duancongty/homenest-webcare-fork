@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Router, Request, Response, NextFunction } from 'express';
 import { io } from '../server';
-import { getTokenController, sendMessageController, deleteMessagesByUser } from '../controllers/zaloController';
+import { getTokenController, sendMessageController } from '../controllers/zaloController';
 import { fetchZaloUserDetail } from '../services/zaloService';
 import UserModel from '../models/User';
 import ZaloMessageModel, { IZaloMessage } from '../models/ZaloMessage';
@@ -83,26 +83,12 @@ router.post('/webhook', async (req: Request, res: Response) => {
     const text = payload?.message?.text ?? '[no text]';
 
     // Upsert GuestUser với mock nếu chưa có
-  let guest = await GuestUser.findById(userId);
-if (!guest) {
-  const profile = await fetchZaloUserDetail(userId);
-  if (!profile) {
-    console.warn(`⚠️ Không lấy được profile Zalo cho userId=${userId}, bỏ qua`);
-    return;
-  }
-
-  guest = await GuestUser.create({
-    _id: userId,
-    username: profile.display_name,
-    avatar: profile.avatar,
-    email: `${userId}@zalo.local`,
-    lastInteraction: new Date(),
-  });
-} else {
-  guest.lastInteraction = new Date();
-  await guest.save();
-}
-
+    const guestData = createMockUser(userId);
+    const guest = await GuestUser.findOneAndUpdate(
+      { _id: userId },
+      { $set: { lastInteraction: new Date(), zaloId: userId }, $setOnInsert: guestData },
+      { upsert: true, new: true }
+    );
 
     const profile = await fetchZaloUserDetail(userId);
 
@@ -344,10 +330,6 @@ router.get('/telesales', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
-// Xóa toàn bộ hội thoại (và tin nhắn) của một userId
-router.delete('/messages/:userId', authenticateToken, deleteMessagesByUser);
-
 //=====================CAll zalo==========================
 // Outbound call (Telesale gọi khách)
 router.post('/call/create', authenticateToken, authorizeRoles(['telesale','admin']), createCallController);
