@@ -40,7 +40,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
     let payload: any = req.body;
     if (typeof payload === 'string') payload = JSON.parse(payload);
 
-    res.status(200).send('OK'); // ✅ trả về 200 ngay cho Zalo
+    res.status(200).send('OK'); // ✅ trả về 200 ngay
 
     const sender = payload?.sender ?? payload?.user;
     const userId = sender?.id;
@@ -48,48 +48,46 @@ router.post('/webhook', async (req: Request, res: Response) => {
 
     const text = payload?.message?.text ?? '[no text]';
 
-    // === [1] Cố gắng lấy profile thật từ Zalo trước ===
-    let profile = null;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        profile = await fetchZaloUserDetail(userId);
-        if (profile?.display_name) break; // ✅ lấy được thì dừng retry
-      } catch (err: any) {
-        console.warn(`⚠️ Thử lần ${attempt} lấy profile Zalo cho ${userId} thất bại:`, err.message);
-      }
-      await new Promise((r) => setTimeout(r, 500 * attempt)); // chờ tăng dần
+    // === [1] Lấy hoặc tạo GuestUser ngay (dù chưa có profile) ===
+    let guest = await GuestUser.findById(userId);
+    if (!guest) {
+      // Tạo nhanh guest placeholder (để không mất tin)
+      guest = await GuestUser.create({
+        _id: userId,
+        username: 'Khách hàng',
+        avatar: null,
+        email: `${userId}@zalo.local`,
+        lastInteraction: new Date(),
+      });
+
+      // Sau khi tạo → fetch profile thật (bất đồng bộ)
+      fetchZaloUserDetail(userId)
+        .then((profile) => {
+          if (profile?.display_name) {
+            GuestUser.updateOne(
+              { _id: userId },
+              {
+                $set: {
+                  username: profile.display_name,
+                  avatar: profile.avatar ?? null,
+                  updatedAt: new Date(),
+                },
+              }
+            ).catch(console.error);
+          }
+        })
+        .catch((e) => console.warn('⚠️ Fetch profile async thất bại:', e.message));
+    } else {
+      guest.lastInteraction = new Date();
+      await guest.save();
     }
 
-    // === [2] Nếu vẫn không lấy được thì bỏ qua tin nhắn (không tạo mock) ===
-    if (!profile) {
-      console.error(`❌ Không thể lấy profile thật cho userId=${userId}, bỏ qua tin nhắn.`);
-      return;
-    }
-
-    // === [3] Upsert GuestUser với thông tin thật ===
-    await GuestUser.updateOne(
-      { _id: userId },
-      {
-        $set: {
-          username: profile.display_name,
-          avatar: profile.avatar ?? null,
-          email: `${userId}@zalo.local`,
-          lastInteraction: new Date(),
-          updatedAt: new Date(),
-        },
-        $setOnInsert: {
-          createdAt: new Date(),
-        },
-      },
-      { upsert: true }
-    );
-
-    // === [4] Lưu tin nhắn ===
+    // === [2] Lưu tin nhắn ngay (dù profile chưa sẵn sàng) ===
     const saved = await ZaloMessageModel.create({
       userId,
       text,
-      username: profile.display_name,
-      avatar: profile.avatar ?? null,
+      username: guest.username,
+      avatar: guest.avatar,
       senderType: 'customer',
       success: true,
       response: payload,
@@ -97,25 +95,22 @@ router.post('/webhook', async (req: Request, res: Response) => {
       read: false,
     });
 
-    // === [5] Emit realtime tới admin ===
+    // === [3] Emit realtime cho admin ===
     const admins = await UserModel.find({ role: 'admin' });
-    const guest = await GuestUser.findById(userId);
-
     admins.forEach((a) =>
       io.to((a._id as any).toString()).emit('new_message', {
         ...saved.toObject(),
         isOnline:
-          guest?.lastInteraction &&
+          guest.lastInteraction &&
           Date.now() - guest.lastInteraction.getTime() < ONLINE_THRESHOLD_MS,
       })
     );
 
-    console.log(`💬 Saved message (real profile) from userId=${userId}, username=${profile.display_name}`);
-  } catch (err: any) {
-    console.error('❌ Zalo webhook POST unexpected error:', err.message);
+    console.log(`💬 Saved message from userId=${userId}, username=${guest.username}`);
+  } catch (err) {
+    console.error('❌ Zalo webhook POST unexpected error:', err);
   }
 });
-
 
 
 // Các route khác
