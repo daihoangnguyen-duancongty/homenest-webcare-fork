@@ -31,27 +31,3 @@ export const getGuestUserById = async (req: Request, res: Response): Promise<voi
     res.status(500).json({ message: 'Lỗi server khi lấy khách hàng' });
   }
 };
-// 🟢 Gán nhãn cho khách hàng
-export const updateGuestLabel = async (req: Request, res: Response) => {
-  try {
-    const { userId } = req.params;
-    const { label } = req.body;
-
-    if (!userId) {
-      res.status(400).json({ message: 'Thiếu userId' });
-      return;
-    }
-
-    const updated = await GuestUser.findByIdAndUpdate(userId, { $set: { label } }, { new: true });
-
-    if (!updated) {
-      res.status(404).json({ message: 'Không tìm thấy khách hàng' });
-      return;
-    }
-
-    res.json({ success: true, user: updated });
-  } catch (err: any) {
-    console.error('❌ Lỗi khi cập nhật nhãn:', err);
-    res.status(500).json({ message: 'Lỗi server khi cập nhật nhãn' });
-  }
-};

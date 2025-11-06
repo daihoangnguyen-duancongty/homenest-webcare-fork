@@ -147,3 +147,22 @@ export const deleteUserMessages = async (userId: string) => {
 
   return res.json();
 };
+// 🟧 Cập nhật nhãn khách hàng
+export const updateGuestLabel = async (userId: string, label: string): Promise<GuestUser> => {
+  const token = getToken();
+  const res = await fetch(`${BASE_URL}/guest-users/${userId}/label`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ label }),
+  });
+
+  if (!res.ok) {
+    console.error('❌ updateGuestLabel failed:', res.status, await res.text());
+    throw new Error('Cannot update label');
+  }
+
+  return res.json();
+};

@@ -39,6 +39,7 @@ export interface GuestUser {
   assignedTelesale?: string | null;
   guestAgoraId?: string;
   telesaleAgoraId?: string;
+  label?: string;
 }
 export interface CallData {
   success?: boolean;

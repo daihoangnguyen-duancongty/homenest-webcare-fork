@@ -21,7 +21,7 @@ import {
 } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { keyframes } from '@mui/system';
-import { assignTelesale,deleteUserMessages } from '../../api/zaloApi';
+import { assignTelesale, deleteUserMessages } from '../../api/zaloApi';
 import SearchBar from '../SearchBar';
 import { Mic } from '@mui/icons-material';
 import SortFilter from '../SortFilter';
@@ -32,16 +32,6 @@ import type { ConversationWithAssign, ModuleKey } from './SidebarLayout';
 import type { Telesales } from '../../api/authApi';
 import type { Dispatch, SetStateAction } from 'react';
 import DeleteConfirmDialog from '../DeleteConfirmDialog';
-
-export interface SidebarLayoutProps {
-  onSelectUser: (conversation: ConversationWithAssign) => void;
-  setActiveModule: (module: ModuleKey) => void;
-  isExpanded: boolean;
-  setIsExpanded: (val: boolean) => void;
-  role?: 'admin' | 'telesale';
-  mobileOpen?: boolean;
-  setMobileOpen?: (val: boolean) => void;
-}
 
 const blink = keyframes`
   0% { transform: scale(1); }
@@ -97,7 +87,7 @@ export interface SidebarWebProps {
   setSelectedConversation: (conv: ConversationWithAssign | null) => void;
   selectedLabel: string;
   setSelectedLabel: (val: string) => void;
-
+  onUpdateLabel: (userId: string, label: string) => Promise<void>;
   // Toast và xác nhận
   toast: { open: boolean; message: string };
   setToast: React.Dispatch<React.SetStateAction<{ open: boolean; message: string }>>;
@@ -152,7 +142,7 @@ export default function SidebarWeb({
   setSelectedConversation,
   selectedLabel,
   setSelectedLabel,
-
+  onUpdateLabel,
   // thông báo & xác nhận
   toast,
   setToast,
@@ -168,13 +158,13 @@ export default function SidebarWeb({
   loading,
   page,
 }: SidebarWebProps) {
-
-
-  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; conv: ConversationWithAssign | null }>({
-  open: false,
-  conv: null,
-});
-
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    conv: ConversationWithAssign | null;
+  }>({
+    open: false,
+    conv: null,
+  });
 
   return (
     <Box
@@ -577,15 +567,14 @@ export default function SidebarWeb({
                           >
                             Phân công
                           </MenuItem>
-  <MenuItem
-  onClick={(e) => {
-    e.stopPropagation();
-    setDeleteDialog({ open: true, conv: c });
-  }}
->
-  Xóa
-</MenuItem>
-
+                          <MenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteDialog({ open: true, conv: c });
+                            }}
+                          >
+                            Xóa
+                          </MenuItem>
 
                           <MenuItem
                             onClick={(e) => {
@@ -705,26 +694,9 @@ export default function SidebarWeb({
         selectedLabel={selectedLabel}
         setSelectedLabel={setSelectedLabel}
         setAvailableLabels={setAvailableLabels}
-        onSave={(label) => {
+        onSave={async (label) => {
           if (!selectedConversation) return;
-
-          // Cập nhật label cho conversation
-          setConversations((prev) =>
-            prev.map((conv) =>
-              conv.userId === selectedConversation.userId ? { ...conv, label } : conv
-            )
-          );
-
-          // Cập nhật availableLabels nếu chưa có
-          if (!availableLabels.includes(label)) {
-            setAvailableLabels((prev) => [...prev, label]);
-          }
-
-          // Hiện toast
-          setToast({
-            open: true,
-            message: `✅ Đã gắn nhãn "${label}" cho ${selectedConversation.name}`,
-          });
+          await onUpdateLabel(selectedConversation.userId, label);
         }}
       />
 
@@ -737,15 +709,14 @@ export default function SidebarWeb({
         message={toast.message}
         sx={{ marginTop: 9, zIndex: 3000 }}
       />
-       {/* DeleteConfirmDialog */}
+      {/* DeleteConfirmDialog */}
       <DeleteConfirmDialog
-  open={deleteDialog.open}
-  conv={deleteDialog.conv}
-  onClose={() => setDeleteDialog({ open: false, conv: null })}
-  setToast={setToast}
-  setConversations={setConversations}
-/>
-
+        open={deleteDialog.open}
+        conv={deleteDialog.conv}
+        onClose={() => setDeleteDialog({ open: false, conv: null })}
+        setToast={setToast}
+        setConversations={setConversations}
+      />
     </Box>
   );
 }

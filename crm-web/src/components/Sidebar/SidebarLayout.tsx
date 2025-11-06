@@ -6,11 +6,11 @@ import GroupIcon from '@mui/icons-material/Group';
 import AutoModeIcon from '@mui/icons-material/AutoMode';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import ContactsIcon from '@mui/icons-material/Contacts';
-import type { Conversation } from '../../types';
+import type { Conversation, GuestUser } from '../../types';
 import { fetchConversations } from '../../api/adminApi';
 import { getTelesales, type Telesales } from '../../api/authApi';
 import { getToken } from '../../utils/auth';
-import { BASE_URL } from '../../api/zaloApi';
+import { BASE_URL, updateGuestLabel } from '../../api/zaloApi';
 import { useSocketStore } from '../../store/socketStore';
 import type { UserOnlinePayload, NewMessagePayload } from '../../types/socket';
 import type { Message } from '../../types/index';
@@ -261,6 +261,43 @@ export default function SidebarLayout({
       loadConversations(nextPage);
     }
   };
+  // update label
+  const handleUpdateGuestLabel = async (userId: string, label: string): Promise<void> => {
+    try {
+      // 1️⃣ Gọi API và đảm bảo type rõ ràng
+      const updatedUser: GuestUser = await updateGuestLabel(userId, label);
+
+      // 2️⃣ Cập nhật trong danh sách conversations
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.userId === updatedUser._id ? { ...conv, label: updatedUser.label } : conv
+        )
+      );
+
+      // 3️⃣ Cập nhật selectedConversation nếu trùng
+      if (selectedConversation?.userId === updatedUser._id) {
+        setSelectedConversation((prev) => (prev ? { ...prev, label: updatedUser.label } : prev));
+      }
+
+      // 4️⃣ Cập nhật selectedLabel để UI LabelDialog hiển thị ngay nhãn mới
+      setSelectedLabel(updatedUser.label || label);
+
+      // 5️⃣ Đồng bộ availableLabels: nếu nhãn mới chưa có, thêm vào
+      if (!availableLabels.includes(label)) {
+        setAvailableLabels((prev) => [...prev, label]);
+      }
+
+      // 6️⃣ Thông báo Toast
+      setToast({
+        open: true,
+        message: `✅ Đã gắn nhãn "${label}" cho ${updatedUser.username || 'khách hàng'}`,
+      });
+    } catch (err) {
+      console.error('❌ Lỗi khi cập nhật nhãn:', err);
+      setToast({ open: true, message: '❌ Không thể cập nhật nhãn' });
+    }
+  };
+
   //sort
   const handleFilterChange = (value: string) => {
     console.log('Đang lọc theo:', value);
@@ -334,6 +371,7 @@ export default function SidebarLayout({
           page={page}
           setConversations={setConversations}
           activeUser={activeUser}
+          onUpdateLabel={handleUpdateGuestLabel}
         />
       )}
       {/* Mobile Sidebar Toggle */}
@@ -375,6 +413,7 @@ export default function SidebarLayout({
           setAvailableLabels={setAvailableLabels}
           loading={loading}
           page={page}
+          onUpdateLabel={handleUpdateGuestLabel}
         />
       )}
     </>
