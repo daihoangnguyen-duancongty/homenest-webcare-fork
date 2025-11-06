@@ -20,19 +20,9 @@ router.get('/guest-users/:id', authenticateToken, getGuestUserById);
 router.get('/guest-id-for-mini-app', async (req, res) => {
   try {
     // Lấy cuộc gọi đang active mới nhất
-    const activeCall = await ActiveCall.findOne({ status: 'calling' }).sort({ createdAt: -1 }).lean();
-
-    if (!activeCall) {
-      res.status(404).json({ message: 'Không có khách nào đang gọi' });
-       return
-    }
-
-    res.json({ guestId: activeCall.guestId });
-  } catch (err: any) {
-    console.error('❌ Lỗi khi lấy guestId đang gọi:', err);
-    res.status(500).json({ message: 'Lỗi server' });
-  }
-});
+    const activeCall = await ActiveCall.findOne({ status: 'calling' })
+      .sort({ createdAt: -1 })
+      .lean();
 
     if (!activeCall) {
       res.status(404).json({ message: 'Không có khách nào đang gọi' });
@@ -45,6 +35,7 @@ router.get('/guest-id-for-mini-app', async (req, res) => {
     res.status(500).json({ message: 'Lỗi server' });
   }
 });
+
 // ✅ Cập nhật nhãn cho khách hàng Zalo
 router.put('/guest-users/:userId/label', authenticateToken, updateGuestLabel);
 export default router;
