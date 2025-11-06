@@ -8,6 +8,7 @@ export interface Message {
   assignedTelesale?: string | null;
   username?: string;
   from?: 'user' | 'admin' | 'telesale';
+  label?: string;
 }
 export type UserWithOnline = User & { isOnline?: boolean };
 export interface User {
@@ -37,6 +38,8 @@ export interface GuestUser {
   isOnline?: boolean;
   lastInteraction?: string | Date;
   assignedTelesale?: string | null;
+  guestAgoraId?: string;
+  telesaleAgoraId?: string;
 }
 export interface CallData {
   success?: boolean;
@@ -45,8 +48,8 @@ export interface CallData {
   guestToken: string;
   telesaleToken: string;
   appId: string;
-  guestAgoraId: string; // UID của guest
-  telesaleAgoraId: string; // UID của telesale
+  guestAgoraId?: string; // UID của guest
+  telesaleAgoraId?: string; // UID của telesale
 }
 export interface InboundCallData {
   guestName?: string;

@@ -25,11 +25,28 @@ export const fetchGuestUsers = async (): Promise<GuestUser[]> => {
   const res = await fetch(`${BASE_URL}/guest-users`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!res.ok) throw new Error('Cannot fetch guest users');
-  const data = await res.json();
 
-  return data.map((u: any) => ({
+  if (!res.ok) throw new Error('Cannot fetch guest users');
+
+  // Giả sử dữ liệu từ API có kiểu tạm thời là:
+  type RawGuestUser = {
+    _id: string;
+    username: string;
+    email?: string;
+    avatar?: string;
+    isOnline?: boolean;
+    lastInteraction?: string | Date;
+    assignedTelesale?: string | null;
+    guestAgoraId?: string;
+    telesaleAgoraId?: string;
+    label?: string;
+  };
+
+  const data: RawGuestUser[] = await res.json();
+
+  return data.map((u) => ({
     ...u,
     userId: u._id,
+    label: u.label || '',
   }));
 };

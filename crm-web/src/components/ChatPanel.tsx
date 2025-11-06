@@ -21,6 +21,7 @@ import { useSocketStore } from '../store/socketStore';
 import { useChatStore } from '../store/chatStore';
 import type { UserWithOnline } from '../types/index';
 import { useAgoraCall } from '../hooks/useAgoraCall';
+import LabelDialog from './LabelDialog';
 
 interface ChatPanelProps {
   userId: string;
@@ -41,6 +42,7 @@ export interface Message {
   userId: string;
   senderType?: 'customer' | 'telesale' | 'admin';
   isOnline?: boolean;
+  label?: string;
 }
 
 export default function ChatPanel({
@@ -56,8 +58,8 @@ export default function ChatPanel({
   const [callStatus, setCallStatus] = useState<string | null>(null);
   const [loadingCallLink, setLoadingCallLink] = useState(false);
   const [outgoingCall, setOutgoingCall] = useState(false);
-  const [callDuration, setCallDuration] = useState<number>(0); 
-const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [callDuration, setCallDuration] = useState<number>(0);
+  const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // message state
   const [messages, setMessages] = useState<Message[]>([]);
@@ -72,6 +74,10 @@ const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const assignedTelesale = useChatStore((state) => state.assignedTelesale[userId]);
   const setAssignedTelesaleStore = useChatStore((state) => state.setAssignedTelesale);
+  // Tag label state
+  const [label, setLabel] = useState<string>('');
+  const [labelDialogOpen, setLabelDialogOpen] = useState(false);
+  const [availableLabels, setAvailableLabels] = useState<string[]>([]);
 
   // ----------------- Drag & Resize -----------------
   const [position, setPosition] = useState<{ top: number; left: number }>(() => ({
@@ -158,7 +164,11 @@ const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ----------------- Fetch messages -----------------
   //tạo biến fallback tránh lỗi crash khi messages[0] la undefined
-  const firstMessage = messages[0] ?? { username: 'Khách hàng', avatar: '/default-avatar.png' };
+  const firstMessage = messages[0] ?? {
+    username: 'Khách hàng',
+    avatar: '/default-avatar.png',
+    label: '',
+  };
 
   const fetchMessages = useCallback(
     async (beforeId?: string) => {
@@ -188,6 +198,21 @@ const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     },
     [userId, role, token, hasMore, onLoaded, fetchAssignedTelesale]
   );
+  // ----------------- Fetch label -----------------
+  useEffect(() => {
+    const fetchLabel = async () => {
+      try {
+        const res = await axios.get(`${BACKEND_URL}/api/zalo/guest-users/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setLabel(res.data.label || '');
+      } catch (err) {
+        console.error('Lỗi khi lấy nhãn:', err);
+      }
+    };
+
+    if (userId) fetchLabel();
+  }, [userId, token]);
 
   useEffect(() => {
     if (!assignedTelesale && messages.length > 0) {
@@ -201,7 +226,7 @@ const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // ----------------- Socket -----------------
   useEffect(() => {
     if (!socket || !userId) return;
-    socket.emit('join', currentUser.id);
+    socket.emit('join', { telesaleId: currentUser.id, userId });
     fetchMessages();
   }, [socket, userId, currentUser.id, fetchMessages]);
 
@@ -210,7 +235,8 @@ const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const handleNewMessage = (msg: Message) => {
       const fixedMsg = {
         ...msg,
-        avatar: msg.avatar || '/default-avatar.png', // fallback avatar
+        avatar: msg.avatar || '/default-avatar.png',
+        label: msg.label || '', // <-- thêm fallback
       };
 
       setMessages((prev) => [...prev, fixedMsg]);
@@ -237,9 +263,11 @@ const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
         username: currentUser.username,
         avatar: currentUser.avatar || '/default-avatar.png', // fallback avatar
         senderType: role === 'admin' ? 'admin' : 'telesale',
+        label: label || '',
       };
 
       setMessages((prev) => [...prev, savedMessage]);
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
       setText('');
       socket?.emit('new_message', savedMessage);
     } catch (err) {
@@ -326,10 +354,10 @@ const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // Bắt đầu cuộc gọi
   const handleCallClick = async () => {
     if (callTimerRef.current) {
-  clearInterval(callTimerRef.current);
-  callTimerRef.current = null;
-}
-setCallDuration(0);
+      clearInterval(callTimerRef.current);
+      callTimerRef.current = null;
+    }
+    setCallDuration(0);
 
     try {
       setOutgoingCall(true);
@@ -341,27 +369,32 @@ setCallDuration(0);
 
       // Cập nhật trạng thái sau khi join thành công
       setCallStatus('Đang gọi khách hàng...');
-// 🟢 Bắt đầu đếm thời gian
-setCallDuration(0);
-if (callTimerRef.current) clearInterval(callTimerRef.current);
-callTimerRef.current = setInterval(() => {
-  setCallDuration((prev) => prev + 1);
-}, 1000);
+      // 🟢 Bắt đầu đếm thời gian
+      setCallDuration(0);
+      if (callTimerRef.current) clearInterval(callTimerRef.current);
+      callTimerRef.current = setInterval(() => {
+        setCallDuration((prev) => prev + 1);
+      }, 1000);
       // ❌ Không gọi handleCallEnd ngay nữa
     } catch (err) {
       setCallStatus('Lỗi khi bắt đầu cuộc gọi');
       console.error(err);
       handleCallEnd('Cuộc gọi thất bại');
       if (callTimerRef.current) {
-  clearInterval(callTimerRef.current);
-  callTimerRef.current = null;
-}
-setCallDuration(0);
-
+        clearInterval(callTimerRef.current);
+        callTimerRef.current = null;
+      }
+      setCallDuration(0);
     } finally {
       setLoadingCallLink(false);
     }
   };
+  // Cleanup call timer on unmount
+  useEffect(() => {
+    return () => {
+      if (callTimerRef.current) clearInterval(callTimerRef.current);
+    };
+  }, []);
 
   // ----------------- Render -----------------
   return (
@@ -407,28 +440,29 @@ setCallDuration(0);
 
             <Typography>{firstMessage.username}</Typography>
           </Box>
-         {callStatus && (
-  <Typography
-    variant="body2"
-    sx={{
-      backgroundColor: 'rgba(255,255,255,0.9)',
-      color: '#333',
-      p: 0.5,
-      px: 1,
-      borderRadius: 1,
-      textAlign: 'center',
-      fontSize: '0.8rem',
-      display: 'inline-block',
-      mt: 0.5,
-    }}
-  >
-    {callStatus.includes('Đang gọi')
-      ? `${callStatus} (${String(Math.floor(callDuration / 60)).padStart(2, '0')}:${String(
-          callDuration % 60
-        ).padStart(2, '0')})`
-      : callStatus}
-  </Typography>
-)}
+          {callStatus && (
+            <Typography
+              variant="body2"
+              sx={{
+                backgroundColor: 'rgba(255,255,255,0.9)',
+                color: '#333',
+                p: 0.5,
+                px: 1,
+                borderRadius: 1,
+                textAlign: 'center',
+                fontSize: '0.8rem',
+                display: 'inline-block',
+                mt: 0.5,
+              }}
+            >
+              {callStatus.includes('Đang gọi')
+                ? `${callStatus} (${String(Math.floor(callDuration / 60)).padStart(
+                    2,
+                    '0'
+                  )}:${String(callDuration % 60).padStart(2, '0')})`
+                : callStatus}
+            </Typography>
+          )}
 
           <Typography variant="caption" sx={{ mt: 0.5, color: 'rgba(255,255,255,0.8)' }}>
             Đang được chăm sóc bởi: {assignedTelesale?.username ?? 'Đang tải...'}
@@ -446,9 +480,29 @@ setCallDuration(0);
             {loadingCallLink ? <CircularProgress size={16} sx={{ color: 'white' }} /> : '📞'}
           </IconButton>
 
-          <IconButton size="small" sx={{ color: 'white' }}>
-            🏷️
-          </IconButton>
+          <Box display="flex" alignItems="center" gap={0.5} sx={{ mx: 3 }}>
+            <IconButton
+              size="small"
+              sx={{ color: 'white' }}
+              onClick={() => setLabelDialogOpen(true)}
+              title="Gắn nhãn"
+            >
+              🏷️
+            </IconButton>
+            {label && (
+              <Typography
+                variant="caption"
+                sx={{
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  color: '#fff',
+                  px: 1,
+                  borderRadius: 1,
+                }}
+              >
+                {label}
+              </Typography>
+            )}
+          </Box>
 
           <Button
             size="small"
@@ -558,6 +612,16 @@ setCallDuration(0);
           }}
         />
       )}
+      <LabelDialog
+        open={labelDialogOpen}
+        onClose={() => setLabelDialogOpen(false)}
+        selectedConversation={{ userId, name: firstMessage.username, label }}
+        availableLabels={availableLabels}
+        setAvailableLabels={setAvailableLabels}
+        selectedLabel={label}
+        setSelectedLabel={setLabel}
+        onSave={(newLabel) => setLabel(newLabel)} // Cập nhật UI khi lưu
+      />
     </Paper>
   );
 }

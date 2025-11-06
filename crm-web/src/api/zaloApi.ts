@@ -147,3 +147,24 @@ export const deleteUserMessages = async (userId: string) => {
 
   return res.json();
 };
+
+// 🔖 Cập nhật nhãn cho guest
+export const updateGuestLabel = async (userId: string, label: string) => {
+  const token = getToken();
+  try {
+    const res = await axios.put(
+      `${BASE_URL}/guest-users/${userId}/label`, // ✅ đường dẫn đúng backend
+      { label },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (res.status !== 200) {
+      throw new Error('Không thể cập nhật nhãn');
+    }
+
+    return res.data;
+  } catch (err) {
+    console.error('❌ updateGuestLabel failed:', err);
+    throw err;
+  }
+};
