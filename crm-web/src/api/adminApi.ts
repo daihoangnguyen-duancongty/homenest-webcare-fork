@@ -27,7 +27,7 @@ export const fetchGuestUsers = async (): Promise<GuestUser[]> => {
   });
   if (!res.ok) throw new Error('Cannot fetch guest users');
   const data = await res.json();
-
+console.log(data);
   return data.map((u: any) => ({
     ...u,
     userId: u._id,

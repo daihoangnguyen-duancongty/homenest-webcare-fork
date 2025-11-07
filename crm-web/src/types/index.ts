@@ -8,6 +8,7 @@ export interface Message {
   assignedTelesale?: string | null;
   username?: string;
   from?: 'user' | 'admin' | 'telesale';
+    label?: string;
 }
 export type UserWithOnline = User & { isOnline?: boolean };
 export interface User {
@@ -37,6 +38,7 @@ export interface GuestUser {
   isOnline?: boolean;
   lastInteraction?: string | Date;
   assignedTelesale?: string | null;
+    label?: string;
 }
 export interface CallData {
   success?: boolean;

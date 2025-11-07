@@ -64,6 +64,8 @@ export const fetchCallLink = async (userId: string): Promise<CallData> => {
       guestToken: string;
       telesaleToken: string;
       appId: string;
+        guestAgoraId: string;      // thêm
+  telesaleAgoraId: string;   // thêm
       message?: string;
     }>(
       `${BACKEND_URL}/api/zalo/call/create`,
@@ -78,7 +80,9 @@ export const fetchCallLink = async (userId: string): Promise<CallData> => {
         channelName: res.data.channelName,
         guestToken: res.data.guestToken,
         telesaleToken: res.data.telesaleToken,
-        appId: res.data.appId,
+          appId: res.data.appId,
+  guestAgoraId: res.data.guestAgoraId,
+       telesaleAgoraId: res.data.telesaleAgoraId,
       };
     } else {
       throw new Error(res.data.message || 'Không thể tạo link gọi Zalo');
@@ -148,7 +152,7 @@ export const deleteUserMessages = async (userId: string) => {
   return res.json();
 };
 
-//  Đồng bộ nhãn (label) lên backend
+// 📌 Đồng bộ nhãn (label) lên backend
 export const updateGuestLabel = async (userId: string, label: string) => {
   const token = getToken();
   if (!userId) throw new Error('userId không hợp lệ');
@@ -175,4 +179,21 @@ export const updateGuestLabel = async (userId: string, label: string) => {
     }
     throw new Error('Cập nhật nhãn thất bại');
   }
+};
+// 🏷️ Lấy nhãn của khách từ db về
+export const fetchGuestLabel = async (userId: string): Promise<string> => {
+  const token = getToken();
+  const res = await fetch(`${BASE_URL}/guests/${userId}/label`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    console.error('❌ fetchGuestLabel failed:', res.status, await res.text());
+    throw new Error('Không thể lấy nhãn của khách');
+  }
+
+  const data = await res.json();
+  return data.label || '';
 };
