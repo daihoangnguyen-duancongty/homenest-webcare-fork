@@ -177,6 +177,7 @@ export default function SidebarWeb({
 });
 
 
+
   return (
     <Box
       sx={{
@@ -725,7 +726,7 @@ export default function SidebarWeb({
         selectedLabel={selectedLabel}
         setSelectedLabel={setSelectedLabel}
         setAvailableLabels={setAvailableLabels}
-        onSave={(label) => {
+  onSave={(label) => {
     if (!selectedConversation) return;
 
     // Cập nhật label cho conversation
