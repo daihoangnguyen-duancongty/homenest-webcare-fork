@@ -147,3 +147,32 @@ export const deleteUserMessages = async (userId: string) => {
 
   return res.json();
 };
+
+//  Đồng bộ nhãn (label) lên backend
+export const updateGuestLabel = async (userId: string, label: string) => {
+  const token = getToken();
+  if (!userId) throw new Error('userId không hợp lệ');
+  if (!label) throw new Error('label không được để trống');
+
+  try {
+    const res = await axios.patch<{ success: boolean; guest: any }>(
+      `${BASE_URL}/guests/${userId}/label`,
+      { label },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (res.data.success) return res.data.guest;
+    throw new Error('Không thể cập nhật nhãn');
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
+      console.error('❌ updateGuestLabel failed:', err.response?.data || err.message);
+    } else {
+      console.error('❌ updateGuestLabel failed:', err);
+    }
+    throw new Error('Cập nhật nhãn thất bại');
+  }
+};

@@ -33,6 +33,7 @@ import type { Telesales } from '../../api/authApi';
 import type { Dispatch, SetStateAction } from 'react';
 import DeleteConfirmDialog from '../DeleteConfirmDialog';
 import { useChatStore } from './../../store/chatStore';
+import { updateGuestLabel } from './../../api/zaloApi'; 
 
 export interface SidebarLayoutProps {
   onSelectUser: (conversation: ConversationWithAssign) => void;
@@ -726,30 +727,29 @@ export default function SidebarWeb({
         selectedLabel={selectedLabel}
         setSelectedLabel={setSelectedLabel}
         setAvailableLabels={setAvailableLabels}
-  onSave={(label) => {
-    if (!selectedConversation) return;
+onSave={async (label) => {
+  if (!selectedConversation) return;
 
-    // Cập nhật label cho conversation
-    setConversations((prev) =>
-      prev.map((conv) =>
-        conv.userId === selectedConversation.userId ? { ...conv, label } : conv
-      )
-    );
+  // Cập nhật conversation local
+  setConversations(prev =>
+    prev.map(conv => conv.userId === selectedConversation.userId ? { ...conv, label } : conv)
+  );
 
-    // **Cập nhật label trong store để ChatPanel nhận**
-    setLabelStore(selectedConversation.userId, label);
+  // Cập nhật store
+  setLabelStore(selectedConversation.userId, label);
 
-    // Cập nhật availableLabels nếu chưa có
-    if (!availableLabels.includes(label)) {
-      setAvailableLabels((prev) => [...prev, label]);
-    }
+  // Cập nhật availableLabels
+  if (!availableLabels.includes(label)) setAvailableLabels(prev => [...prev, label]);
 
-    // Hiện toast
-    setToast({
-      open: true,
-      message: `✅ Đã gắn nhãn "${label}" cho ${selectedConversation.name}`,
-    });
-  }}
+  // Gọi backend đồng bộ
+  try {
+    await updateGuestLabel(selectedConversation.userId, label);
+    setToast({ open: true, message: `✅ Gắn nhãn "${label}" cho ${selectedConversation.name}` });
+  } catch (err: any) {
+    console.error(err);
+    setToast({ open: true, message: `❌ Lỗi đồng bộ nhãn: ${err.message}` });
+  }
+}}
       />
 
       {/* Snackbar */}

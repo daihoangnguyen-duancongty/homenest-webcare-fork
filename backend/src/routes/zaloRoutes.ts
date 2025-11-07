@@ -334,6 +334,37 @@ router.get('/telesales', async (req, res) => {
 // Xóa toàn bộ hội thoại (và tin nhắn) của một userId
 router.delete('/messages/:userId', authenticateToken, deleteMessagesByUser);
 
+
+// Cập nhật nhãn cho 1 user (admin/telesale)
+router.patch(
+  '/guests/:userId/label',
+  authenticateToken,
+  authorizeRoles(['admin', 'telesale']),
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const { userId } = req.params;
+      const { label } = req.body;
+      if (!label) {
+        res.status(400).json({ error: 'label là bắt buộc' });
+        return;
+      }
+
+      const guest = await GuestUser.findByIdAndUpdate(userId, { label }, { new: true });
+
+      if (!guest) {
+        res.status(404).json({ error: 'Guest không tồn tại' });
+        return;
+      }
+
+      io.to(userId).emit('label_updated', { userId, label });
+      res.json({ success: true, guest });
+    } catch (err: any) {
+      console.error('❌ /guests/:userId/label error:', err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
 //=====================CAll zalo==========================
 // Outbound call (Telesale gọi khách)
 router.post('/call/create', authenticateToken, authorizeRoles(['telesale','admin']), createCallController);
