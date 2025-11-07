@@ -30,6 +30,10 @@ interface ChatPanelProps {
   onClick?: () => void;
   sx?: object;
   initialPosition?: { x: number; y: number };
+   selectedConversation?: {
+    id: string;
+    label?: string;
+  };
 }
 
 export interface Message {
@@ -51,7 +55,17 @@ export default function ChatPanel({
   onClick,
   sx,
   initialPosition,
+   selectedConversation,
 }: ChatPanelProps) {
+  // store
+
+  const label = useChatStore((state) => state.labels[userId] ?? '');
+
+
+
+
+ console.log(label)
+  
   // call state
   const [callStatus, setCallStatus] = useState<string | null>(null);
   const [loadingCallLink, setLoadingCallLink] = useState(false);
@@ -446,9 +460,22 @@ setCallDuration(0);
             {loadingCallLink ? <CircularProgress size={16} sx={{ color: 'white' }} /> : '📞'}
           </IconButton>
 
-          <IconButton size="small" sx={{ color: 'white' }}>
-            🏷️
-          </IconButton>
+           {/* Nhãn nếu có */}
+{label && (
+  <Typography
+    variant="caption"
+    sx={{
+      mt: 0.3,
+      bgcolor: '#ffd70033',
+      borderRadius: 1,
+      px: 0.5,
+      py: 0.2,
+    }}
+  >
+    🏷️ {label}
+  </Typography>
+)}
+
 
           <Button
             size="small"

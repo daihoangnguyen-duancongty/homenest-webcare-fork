@@ -8,6 +8,8 @@ import { getConfig } from '@/utils/template';
 import { authorize, createOrder, openChat } from 'zmp-sdk/apis';
 import { useAtomCallback } from 'jotai/utils';
 import AgoraRTC from 'agora-rtc-sdk-ng';
+import axios from 'axios';
+import { BACKEND_URL } from '@/config/fetchConfig';
 
 // Hàm tham gia cuộc gọi video qua Agora
 // 👉 Tạo type mô phỏng cho Agora client
@@ -16,101 +18,86 @@ type IRemoteUser = { uid: string | number; audioTrack?: any; videoTrack?: any };
 
 let agoraClient: any = null;
 
-export function useAgoraCall() {
+export function useAgoraCall(userId: string) {
   const clientRef = useRef<IAgoraRTCClient | null>(null);
   const [isCalling, setIsCalling] = useState(false);
   const [localTrack, setLocalTrack] = useState<any>(null);
 
   const log = (...args: any[]) => console.log("[AGORA]", ...args);
 
-  const startCall = async (channelName: string, token: string, appId: string, uid: string | number) => {
+  // 🔹 Lấy thông tin channel + token từ backend
+const fetchCallInfo = async (): Promise<{
+  appId: string;
+  channelName: string;
+  uid: string | number;
+  token: string;
+}> => {
+  try {
+    const res = await axios.post(
+      `${BACKEND_URL}/api/zalo/guest-id-for-mini-app`,
+      { guestId: userId }
+    );
+
+    console.log("🔍 fetchCallInfo response:", res.data);
+
+    if (!res.data.success) {
+      throw new Error(res.data.message || 'Không lấy được call info');
+    }
+
+    return {
+      appId: res.data.appId,
+      channelName: res.data.channelName,
+      uid: res.data.guestAgoraId,
+      token: res.data.guestToken,
+    };
+  } catch (error) {
+    console.error("🚨 fetchCallInfo error:", error);
+    throw error;
+  }
+};
+
+
+  const startCall = async () => {
     try {
-      log("🎯 Joining Agora:", { channelName, uid });
+      const { appId, channelName, uid, token } = await fetchCallInfo();
+
+      log("🧩 [MINI APP JOIN INFO]", { AppId: appId, Channel: channelName, UID: uid, Token: token });
 
       if (!clientRef.current) {
-        clientRef.current = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+        clientRef.current = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
       }
       const client = clientRef.current;
 
-      // --- Kiểm tra quyền mic trước khi tạo track ---
+      // Kiểm tra quyền mic
       const hasMicPermission = await navigator.mediaDevices.getUserMedia({ audio: true })
         .then(() => true)
         .catch((err) => {
           log("❌ Không lấy được quyền micro:", err);
           return false;
         });
+      if (!hasMicPermission) return;
 
-      if (!hasMicPermission) {
-        log("🚫 Không có quyền micro, dừng call");
-        return;
-      }
-
-      // --- Tạo mic track ---
+      // Tạo local mic track
       const micTrack = await AgoraRTC.createMicrophoneAudioTrack();
-      log("🎤 Mic track created:", micTrack.getTrackId(), micTrack.getMediaStreamTrack()?.readyState);
-
-      // --- Kiểm tra thiết bị audio khả dụng ---
-      const devices = await AgoraRTC.getDevices();
-      const mics = devices.filter((d) => d.kind === "audioinput");
-      const speakers = devices.filter((d) => d.kind === "audiooutput");
-      log("🎧 Danh sách thiết bị:", {
-        micCount: mics.length,
-        speakerCount: speakers.length,
-        mics,
-        speakers,
-      });
-
- // --- Join channel ---
-log("🧩 [MINI APP JOIN INFO]", {
-  AppId: appId,
-  Channel: channelName,
-  UID: uid,
-  Token: token?.substring(0, 40) + "...", // chỉ log 40 ký tự đầu cho gọn
-});
-
-await client.join(appId, channelName, token || null, uid);
-log(`✅ Joined channel ${channelName} as uid=${uid}`);
-
-
-      // --- Publish local track ---
-      await client.publish([micTrack]);
       setLocalTrack(micTrack);
+
+      // Join channel chính xác từ backend
+      await client.join(appId, channelName, token, uid);
+      log(`✅ Joined channel ${channelName} as uid=${uid}`);
+
+      // Publish local track
+      await client.publish([micTrack]);
       setIsCalling(true);
       log("📡 Mic published successfully");
 
-      // --- Lắng nghe remote user ---
-      client.on("user-published", async (user, mediaType) => {
-        log("📥 Remote user published:", user.uid, mediaType);
-        await client.subscribe(user, mediaType);
-        log("✅ Subscribed to remote user:", user.uid, mediaType);
-
-        if (mediaType === "audio" && user.audioTrack) {
-          log("🔊 Đang phát remote audio...");
-          user.audioTrack.play();
-        }
+      // Lắng nghe remote users
+      client.on('user-published', async (user, type) => {
+        await client.subscribe(user, type);
+        log("📥 Remote user published:", user.uid, type);
+        if (type === 'audio' && user.audioTrack) user.audioTrack.play();
       });
 
-      client.on("user-unpublished", (user) => {
-        log("❌ Remote user unpublished:", user.uid);
-      });
-
-    // --- Theo dõi trạng thái mic ---
-const mediaStreamTrack = micTrack.getMediaStreamTrack();
-
-// Sự kiện khi mic bị ngắt (ví dụ đóng quyền hoặc mất device)
-mediaStreamTrack.addEventListener("ended", () => {
-  log("⚠️ Mic track ended (bị mất kết nối hoặc thu hồi quyền)");
-});
-
-// Kiểm tra thủ công mute/unmute (vì WebRTC không phát event mute/unmute)
-setInterval(() => {
-  if (mediaStreamTrack.enabled === false) {
-    log("🔇 Mic đang bị disable (mute)");
-  } else {
-    log("🔈 Mic đang hoạt động (unmuted)");
-  }
-}, 3000);
-
+      client.on('user-unpublished', (user) => log("❌ Remote user unpublished:", user.uid));
 
     } catch (err) {
       log("🚨 startCall error:", err);
@@ -122,13 +109,14 @@ setInterval(() => {
       if (localTrack) {
         localTrack.stop();
         localTrack.close();
-        log("🛑 Mic track stopped & closed");
+        setLocalTrack(null);
       }
       if (clientRef.current) {
         await clientRef.current.leave();
-        log("👋 Left the call");
+        clientRef.current = null;
       }
       setIsCalling(false);
+      log("👋 Left the call");
     } catch (err) {
       log("🚨 stopCall error:", err);
     }

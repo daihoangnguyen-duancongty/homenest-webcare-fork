@@ -80,8 +80,8 @@ export default function CustomerPanel({ onOpenChat, sx }: CustomerPanelProps) {
           >
             <Card
               sx={{
-                width: '16vw', // dùng vw để tự co giãn theo màn hình
-                height: '24vh', // đảm bảo các card cao bằng nhau
+                width: '14vw', // dùng vw để tự co giãn theo màn hình
+                height: '22vh', // đảm bảo các card cao bằng nhau
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',

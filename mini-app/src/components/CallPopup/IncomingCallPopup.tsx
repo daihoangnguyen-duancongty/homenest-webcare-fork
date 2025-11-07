@@ -27,7 +27,16 @@ export default function IncomingCallPopup({
   role = 'guest',
   callStatus = 'calling',
 }: IncomingCallPopupProps) {
-  const { startCall } = useAgoraCall();
+    if (!callData) {
+  return null; // hoặc hiển thị loading
+}
+
+const uid =
+  role === 'telesale'
+    ? callData.telesaleAgoraId ?? '0'
+    : callData.guestAgoraId;
+
+const { startCall } = useAgoraCall(uid);
   const [debugLog, setDebugLog] = useState<string[]>([]);
   const [callDuration, setCallDuration] = useState(0);
 
@@ -51,7 +60,7 @@ export default function IncomingCallPopup({
     setDebugLog((prev) => [...prev, message]);
   };
 
-  const uid = role === 'telesale' ? callData.telesaleAgoraId || '0' : callData.guestAgoraId;
+
 
   // 🧠 Hiển thị text trạng thái
   const getCallText = () => {
@@ -94,10 +103,7 @@ export default function IncomingCallPopup({
                 log('🎤 Mic permission granted, joining channel...');
 
                 await startCall(
-                  callData.channelName,
-                  role === 'telesale' ? callData.telesaleToken || '' : callData.guestToken,
-                  callData.appId,
-                  uid
+                 
                 );
 
                 log('✅ Joined Agora successfully');

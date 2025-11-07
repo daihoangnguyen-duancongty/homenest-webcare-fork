@@ -32,6 +32,7 @@ import type { ConversationWithAssign, ModuleKey } from './SidebarLayout';
 import type { Telesales } from '../../api/authApi';
 import type { Dispatch, SetStateAction } from 'react';
 import DeleteConfirmDialog from '../DeleteConfirmDialog';
+import { useChatStore } from './../../store/chatStore';
 
 export interface SidebarLayoutProps {
   onSelectUser: (conversation: ConversationWithAssign) => void;
@@ -169,7 +170,7 @@ export default function SidebarWeb({
   page,
 }: SidebarWebProps) {
 
-
+  const setLabelStore = useChatStore((state) => state.setLabel);
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; conv: ConversationWithAssign | null }>({
   open: false,
   conv: null,
@@ -454,6 +455,25 @@ export default function SidebarWeb({
                   >
                     {c.name || c.userId}
                   </Typography>
+                  
+  {/* Hiển thị nhãn */}
+  {c.label && (
+    <Box
+      sx={{
+        mt: 0.5,
+        display: 'inline-flex',
+        alignItems: 'center',
+        bgcolor: '#ffd70033', // vàng nhạt
+        px: 1,
+        py: 0.3,
+        borderRadius: 1,
+        fontSize: '0.7rem',
+        fontWeight: 500,
+      }}
+    >
+      🏷️ {c.label}
+    </Box>
+  )}
                   <Typography
                     noWrap
                     variant="body2"
@@ -706,26 +726,29 @@ export default function SidebarWeb({
         setSelectedLabel={setSelectedLabel}
         setAvailableLabels={setAvailableLabels}
         onSave={(label) => {
-          if (!selectedConversation) return;
+    if (!selectedConversation) return;
 
-          // Cập nhật label cho conversation
-          setConversations((prev) =>
-            prev.map((conv) =>
-              conv.userId === selectedConversation.userId ? { ...conv, label } : conv
-            )
-          );
+    // Cập nhật label cho conversation
+    setConversations((prev) =>
+      prev.map((conv) =>
+        conv.userId === selectedConversation.userId ? { ...conv, label } : conv
+      )
+    );
 
-          // Cập nhật availableLabels nếu chưa có
-          if (!availableLabels.includes(label)) {
-            setAvailableLabels((prev) => [...prev, label]);
-          }
+    // **Cập nhật label trong store để ChatPanel nhận**
+    setLabelStore(selectedConversation.userId, label);
 
-          // Hiện toast
-          setToast({
-            open: true,
-            message: `✅ Đã gắn nhãn "${label}" cho ${selectedConversation.name}`,
-          });
-        }}
+    // Cập nhật availableLabels nếu chưa có
+    if (!availableLabels.includes(label)) {
+      setAvailableLabels((prev) => [...prev, label]);
+    }
+
+    // Hiện toast
+    setToast({
+      open: true,
+      message: `✅ Đã gắn nhãn "${label}" cho ${selectedConversation.name}`,
+    });
+  }}
       />
 
       {/* Snackbar */}

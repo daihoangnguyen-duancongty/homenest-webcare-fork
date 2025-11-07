@@ -100,17 +100,38 @@ const LabelDialog: React.FC<LabelDialogProps> = ({
             </strong>
           </Typography>
 
-          {/* Chọn nhãn có sẵn */}
-          <FormControl fullWidth variant="outlined" size="small">
+        {/* Chọn nhãn có sẵn */}
+
+          <FormControl
+            fullWidth
+            size="small"
+            sx={{
+              borderRadius: 3,
+              backgroundColor: 'white',
+              '&:hover': { backgroundColor: '#f9f9ff' },
+            }}
+          >
             <InputLabel>Chọn nhãn</InputLabel>
             <Select
               value={selectedLabel}
               label="Chọn nhãn"
               onChange={(e) => setSelectedLabel(e.target.value)}
+              MenuProps={{
+                disablePortal: true, // ✅ đúng chỗ, truyền xuống Menu bên trong
+                disableScrollLock: true,
+                PaperProps: {
+                  sx: {
+                    borderRadius: 2,
+                    mt: 1,
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                    zIndex: 2000,
+                  },
+                },
+              }}
               sx={{
                 borderRadius: 3,
-                backgroundColor: "white",
-                "&:hover": { backgroundColor: "#f9f9ff" },
+                backgroundColor: 'white',
+                '&:hover': { backgroundColor: '#f9f9ff' },
               }}
             >
               {availableLabels.map((label) => (

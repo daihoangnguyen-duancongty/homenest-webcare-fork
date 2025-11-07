@@ -169,8 +169,8 @@ export default function AdminDashboard() {
             sx={{
               position: 'absolute',
               top: '26vh',
-              left: '16vw',
-              width: '77%',
+              left: '12vw',
+              width: '84%',
             }}
             onOpenChat={handleOpenChat}
           />
