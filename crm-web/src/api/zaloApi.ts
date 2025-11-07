@@ -130,3 +130,41 @@ export const assignTelesale = async (userId: string, telesaleId: string) => {
 
   return res.json();
 };
+// 🗑️ Xóa toàn bộ tin nhắn của 1 user
+export const deleteUserMessages = async (userId: string) => {
+  const token = getToken();
+  const res = await fetch(`${BASE_URL}/messages/${userId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    console.error('❌ deleteUserMessages failed:', res.status, await res.text());
+    throw new Error('Không thể xóa tin nhắn');
+  }
+
+  return res.json();
+};
+
+// 🔖 Cập nhật nhãn cho guest
+export const updateGuestLabel = async (userId: string, label: string) => {
+  const token = getToken();
+  try {
+    const res = await axios.put(
+      `${BASE_URL}/guest-users/${userId}/label`, // ✅ đường dẫn đúng backend
+      { label },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (res.status !== 200) {
+      throw new Error('Không thể cập nhật nhãn');
+    }
+
+    return res.data;
+  } catch (err) {
+    console.error('❌ updateGuestLabel failed:', err);
+    throw err;
+  }
+};
