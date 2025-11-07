@@ -336,34 +336,35 @@ router.delete('/messages/:userId', authenticateToken, deleteMessagesByUser);
 
 
 // Cập nhật nhãn cho 1 user (admin/telesale)
-router.patch(
-  '/guests/:userId/label',
-  authenticateToken,
-  authorizeRoles(['admin', 'telesale']),
-  async (req: AuthRequest, res: Response): Promise<void> => {
-    try {
-      const { userId } = req.params;
-      const { label } = req.body;
-      if (!label) {
-        res.status(400).json({ error: 'label là bắt buộc' });
-        return;
-      }
+router.patch('/guests/:id/label', authenticateToken, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { label } = req.body;
 
-      const guest = await GuestUser.findByIdAndUpdate(userId, { label }, { new: true });
-
-      if (!guest) {
-        res.status(404).json({ error: 'Guest không tồn tại' });
-        return;
-      }
-
-      io.to(userId).emit('label_updated', { userId, label });
-      res.json({ success: true, guest });
-    } catch (err: any) {
-      console.error('❌ /guests/:userId/label error:', err);
-      res.status(500).json({ error: err.message });
+    if (!label) {
+      res.status(400).json({ success: false, message: 'Label không được để trống' });
+      return 
     }
+
+    const guest = await GuestUser.findByIdAndUpdate(id, { label }, { new: true });
+
+    if (!guest) {
+       res.status(404).json({ success: false, message: 'Không tìm thấy guest' });
+       return
+    }
+
+    // ✅ Đồng bộ nhãn cho tất cả tin nhắn của guest
+    await ZaloMessageModel.updateMany({ userId: id }, { $set: { label } });
+
+    console.log(`✅ PATCH /guests/${id}/label: label="${label}" đã lưu vào DB và đồng bộ tin nhắn`);
+    res.json({ success: true, guest });
+  } catch (err: any) {
+    console.error('❌ PATCH /guests/:id/label error:', err);
+    res.status(500).json({ success: false, message: err.message });
   }
-);
+});
+
+
 
 //=====================CAll zalo==========================
 // Outbound call (Telesale gọi khách)
